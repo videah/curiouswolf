@@ -1,6 +1,7 @@
 use std::sync::Arc;
-use axum::{extract::{Extension, Path}, http::StatusCode, Json, response::{IntoResponse, Response}};
+use axum::{extract::{Extension, Path}, http::StatusCode, Json, response::{IntoResponse, Response}, Router};
 use axum::extract::State;
+use axum::routing::{post};
 use axum_sessions::extractors::WritableSession;
 use sqlx::{PgPool, Postgres};
 
@@ -24,6 +25,18 @@ pub enum WebauthnError {
 #[derive(Clone)]
 pub struct AuthState {
     pub webauthn: Arc<Webauthn>
+}
+
+impl AuthState {
+    pub fn new() -> AuthState {
+        let rp_id = std::env::var("CURIOUSWOLF_HOSTNAME").unwrap();
+        let rp_origin = Url::parse(&format!("https://{rp_id}")).unwrap();
+        let builder = WebauthnBuilder::new(&rp_id, &rp_origin).unwrap();
+        let builder = builder.rp_name("curiouswolf");
+
+        let webauthn = Arc::new(builder.build().unwrap());
+        AuthState { webauthn }
+    }
 }
 
 impl IntoResponse for WebauthnError {
@@ -54,8 +67,8 @@ pub async fn start_register(
     // If the user has any other credentials, we exclude these so they can't be registered twice.
     // It also hints to the browser that only new credentials should be "blinked" for interaction.
     let exclude_credentials: Vec<CredentialID> = {
-        sqlx::query_as::<Postgres, Credential>("SELECT * FROM passkeys WHERE user_id = $1")
-            .bind(user_unique_id.to_string())
+        sqlx::query_as::<Postgres, Credential>("SELECT * FROM credentials WHERE user_uuid = $1")
+            .bind(user_unique_id)
             .fetch_all(&db)
             .await
             .expect("Failed to pull existing credentials")
@@ -89,44 +102,58 @@ pub async fn start_register(
 pub async fn finish_register(
     Extension(state): Extension<AuthState>,
     mut session: WritableSession,
-    Json(reg): Json<RegisterPublicKeyCredential>,
     State(db): State<PgPool>,
+    Json(reg): Json<RegisterPublicKeyCredential>,
 ) -> Result<impl IntoResponse, WebauthnError> {
+
+    info!("Attempting to complete registration");
     let (username, user_unique_id, reg_state): (String, Uuid, PasskeyRegistration) = session
         .get("reg_state")
         .ok_or(WebauthnError::CorruptSession)?;
 
+    info!("Got registration state from session");
+
     session.remove("reg_state");
+
     let res = match state.webauthn.finish_passkey_registration(&reg, &reg_state) {
         Ok(passkey) => {
+
+            // Batch inserts so we can rollback if either fails.
+            let mut tx = db.begin()
+                .await
+                .expect("Failed to begin transaction");
+
             let user_query = r#"
                 INSERT INTO users
-                    ( username )
+                    ( username, uuid )
                 VALUES
-                    ( $1 )
+                    ( $1, $2 )
                 returning *
             "#;
 
-            let user_result = sqlx::query_as::<Postgres, User>(user_query)
+            sqlx::query(user_query)
                 .bind(username)
-                .fetch_one(&db)
+                .bind(user_unique_id)
+                .execute(&mut tx)
                 .await
                 .expect("Could not create user");
 
             let cred_query = r#"
                 INSERT INTO credentials
-                    ( user_id, passkey )
+                    ( user_uuid, passkey )
                 VALUES
                     ( $1, $2 )
                 RETURNING *
             "#;
 
-            let cred_result = sqlx::query_as::<Postgres, Credential>(cred_query)
-                .bind(1)
+            sqlx::query(cred_query)
+                .bind(user_unique_id)
                 .bind(sqlx::types::Json(passkey))
-                .fetch_one(&db)
+                .execute(&mut tx)
                 .await
                 .expect("Could not create credential");
+
+            tx.commit().await.expect("Failed to commit transaction");
 
             StatusCode::OK
         }

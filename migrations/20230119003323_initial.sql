@@ -1,5 +1,6 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY NOT NULL,
+    uuid UUID UNIQUE NOT NULL,
     username VARCHAR(15) NOT NULL UNIQUE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
@@ -23,6 +24,6 @@ CREATE TABLE answers (
 
 CREATE TABLE credentials (
     id SERIAL PRIMARY KEY NOT NULL,
-    user_id INTEGER NOT NULL REFERENCES users(id),
+    user_uuid UUID NOT NULL REFERENCES users(uuid),
     passkey JSONB NOT NULL
 );

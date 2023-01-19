@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block head %}
+<script src="/static/simple-webauthn.min.js"></script>
+<script src="/static/registration.js"></script>
+{% endblock %}
+
+{% block content %}
+<label for="username">Username:</label>
+<input class="text-black" type="text" id="username" name="username">
+<button id="register-button">
+    Register
+</button>
+{% endblock %}
