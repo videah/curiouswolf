@@ -1,6 +1,6 @@
 CREATE TABLE users (
     id SERIAL PRIMARY KEY NOT NULL,
-    email VARCHAR(320) NOT NULL UNIQUE,
+    username VARCHAR(15) NOT NULL UNIQUE,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
@@ -21,8 +21,8 @@ CREATE TABLE answers (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
-CREATE TABLE passkeys (
+CREATE TABLE credentials (
     id SERIAL PRIMARY KEY NOT NULL,
     user_id INTEGER NOT NULL REFERENCES users(id),
-    credential JSONB NOT NULL
+    passkey JSONB NOT NULL
 );
