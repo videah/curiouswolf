@@ -1,7 +1,7 @@
 use std::sync::Arc;
-use axum::{extract::{Extension, Path}, http::StatusCode, Json, response::{IntoResponse, Response}, Router};
+use axum::{extract::{Extension, Path}, http::StatusCode, Json, response::{IntoResponse, Response}};
 use axum::extract::State;
-use axum::routing::{post};
+use axum_login::PostgresStore;
 use axum_sessions::extractors::WritableSession;
 use sqlx::{PgPool, Postgres};
 
@@ -9,6 +9,8 @@ use webauthn_rs::prelude::*;
 use thiserror::Error;
 
 use crate::models::{Credential, User};
+
+pub type AuthContext = axum_login::extractors::AuthContext<User, PostgresStore<User>>;
 
 #[derive(Error, Debug)]
 pub enum WebauthnError {
@@ -110,7 +112,6 @@ pub async fn finish_register(
     let (username, user_unique_id, reg_state): (String, Uuid, PasskeyRegistration) = session
         .get("reg_state")
         .ok_or(WebauthnError::CorruptSession)?;
-
     info!("Got registration state from session");
 
     session.remove("reg_state");
@@ -166,3 +167,115 @@ pub async fn finish_register(
     Ok(res)
 }
 
+pub async fn start_authentication(
+    Extension(state): Extension<AuthState>,
+    mut session: WritableSession,
+    Path(username): Path<String>,
+    State(db): State<PgPool>,
+) -> Result<impl IntoResponse, WebauthnError> {
+
+    session.remove("auth_state");
+
+    // Get the user from the database if it exists.
+    let user = {
+        sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
+            .bind(username)
+            .fetch_optional(&db)
+            .await
+            .unwrap()
+            .ok_or(WebauthnError::UserNotFound)?
+    };
+
+    let passkeys: Vec<Passkey> = {
+        sqlx::query_as::<Postgres, Credential>("SELECT * FROM credentials WHERE user_uuid = $1")
+            .bind(user.uuid)
+            .fetch_all(&db)
+            .await
+            .expect("Failed to pull existing credentials")
+            .iter()
+            .map(|cred| cred.passkey.0.clone())
+            .collect()
+    };
+
+    let allow_credentials = passkeys.as_slice();
+
+    let res = match state.webauthn.start_passkey_authentication(allow_credentials) {
+        Ok((rcr, auth_state)) => {
+            session
+                .insert("auth_state", (user.uuid, auth_state, user))
+                .expect("Failed to insert");
+            info!("Successfully started authentication!");
+            Json(rcr)
+        }
+        Err(e) => {
+            debug!("challenge_authenticate -> {:?}", e);
+            return Err(WebauthnError::Unknown);
+        }
+    };
+
+    Ok(res)
+}
+
+pub async fn finish_authentication(
+    Extension(state): Extension<AuthState>,
+    mut session: WritableSession,
+    mut auth_provider: AuthContext,
+    State(db): State<PgPool>,
+    Json(auth): Json<PublicKeyCredential>,
+) -> Result<impl IntoResponse, WebauthnError> {
+
+    info!("Attempting to complete authentication");
+    let (user_unique_id, auth_state, user): (Uuid, PasskeyAuthentication, User) = session
+        .get("auth_state")
+        .ok_or(WebauthnError::CorruptSession)?;
+    info!("Got authentication state from session");
+
+    session.remove("auth_state");
+
+    let res = match state.webauthn.finish_passkey_authentication(&auth, &auth_state) {
+        Ok(auth_result) => {
+            // Update the credential counter if needed.
+            // Unlikely to be necessary since most passkeys don't even have a mechanism
+            // for holding their count, but should be handled regardless just in case 🤞
+            if auth_result.needs_update() {
+                let mut credentials = {
+                    sqlx::query_as::<Postgres, Credential>("SELECT * FROM credentials WHERE user_uuid = $1")
+                        .bind(user_unique_id)
+                        .fetch_all(&db)
+                        .await
+                        .expect("Failed to pull existing credentials")
+                };
+
+                for cred in credentials.iter_mut() {
+                    let is_valid_credential = cred.passkey.update_credential(&auth_result);
+                    if let Some(updated) = is_valid_credential {
+                        if updated {
+                            sqlx::query("UPDATE credentials SET passkey = $1 WHERE id = $2")
+                                .bind(cred.passkey.clone())
+                                .bind(cred.id.clone())
+                                .execute(&db)
+                                .await
+                                .expect("Could not update passkey");
+                            break;
+                        }
+                    }
+                }
+            }
+
+            // We need to drop our current handle or the auth_provide will deadlock us when it
+            // tries to grab a lock on the session.
+            drop(session);
+
+            auth_provider.login(&user).await.expect("Failed to sign in user via session.");
+            info!("User successfully logged in: {:?}", user);
+
+            StatusCode::OK
+        }
+        Err(e) => {
+            debug!("challenge_register -> {:?}", e);
+            StatusCode::BAD_REQUEST
+        }
+    };
+
+    Ok(res)
+}

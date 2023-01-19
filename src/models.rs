@@ -1,16 +1,35 @@
 use sqlx::FromRow;
 use sqlx::types::Json;
-use webauthn_rs::prelude::Passkey;
+use webauthn_rs::prelude::{Passkey, Uuid};
+
+use axum_login::{
+    axum_sessions::{async_session::MemoryStore, SessionLayer},
+    secrecy::SecretVec,
+    AuthLayer, AuthUser, RequireAuthorizationLayer,
+};
+
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, FromRow)]
 pub struct Credential {
     pub id: i32,
-    pub user_id: i32,
+    pub user_uuid: Uuid,
     pub passkey: Json<Passkey>,
 }
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow, Serialize, Deserialize)]
 pub struct User {
     pub id: i32,
+    pub uuid: Uuid,
     pub username: String,
+}
+
+impl AuthUser for User {
+    fn get_id(&self) -> String {
+        format!("{}", self.id)
+    }
+
+    fn get_password_hash(&self) -> SecretVec<u8> {
+        SecretVec::new(self.username.clone().into())
+    }
 }
