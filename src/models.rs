@@ -24,9 +24,9 @@ pub struct User {
     pub username: String,
 }
 
-impl AuthUser for User {
-    fn get_id(&self) -> String {
-        format!("{}", self.id)
+impl AuthUser<i32> for User {
+    fn get_id(&self) -> i32 {
+        self.id
     }
 
     fn get_password_hash(&self) -> SecretVec<u8> {

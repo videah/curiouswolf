@@ -10,7 +10,7 @@ use thiserror::Error;
 
 use crate::models::{Credential, User};
 
-pub type AuthContext = axum_login::extractors::AuthContext<User, PostgresStore<User>>;
+pub type AuthContext = axum_login::extractors::AuthContext<i32, User, PostgresStore<User>>;
 
 #[derive(Error, Debug)]
 pub enum WebauthnError {
