@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="en">
 <head>
     <meta charset="UTF-8">
     <title>🐺 - curiouswolf</title>
@@ -7,8 +7,8 @@
     <script src="https://unpkg.com/htmx.org@1.8.5"></script>
     {% block head %}{% endblock %}
 </head>
-<body class="bg-stone-900 text-white">
-    <div class="container mx-auto min-h-screen bg-stone-800 max-w-3xl">
+<body class="bg-gray-200 dark:bg-stone-900 dark:text-white px-4">
+    <div class="container mx-auto min-h-screen max-w-3xl">
         {% block content %}{% endblock %}
     </div>
 </body>

@@ -1,6 +1,7 @@
 /** @type {import('tailwindcss').Config} */
 let colors = require("tailwindcss/colors")
 module.exports = {
+    darkMode: 'class',
     content: ["./templates/**/*.{html,js}"],
     theme: {
         extend: {

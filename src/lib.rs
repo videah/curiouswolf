@@ -37,7 +37,9 @@ struct RegisterPage;
 
 #[derive(Template)]
 #[template(path = "login.html")]
-struct LoginPage;
+struct LoginPage {
+    pub current_user: Option<User>,
+}
 
 #[derive(Template)]
 #[template(path = "profile.html")]
@@ -57,7 +59,9 @@ async fn register() -> RegisterPage {
 }
 
 async fn login() -> LoginPage {
-    LoginPage {}
+    LoginPage {
+        current_user: None,
+    }
 }
 
 async fn profile(
