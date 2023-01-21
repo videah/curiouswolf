@@ -5,9 +5,9 @@
     {% when Some with (user) %}
     <span>Logged in as: {{ user.username }}</span>
     <span class="px-2"> | </span>
-    <a href="/logout">Logout</a>
+    <a href="/sign-out">Sign out</a>
     {% when None %}
-    <a href="/login">Login</a>
+    <a href="/sign-in">Sign in</a>
     {% endmatch %}
   </div>
 </nav>

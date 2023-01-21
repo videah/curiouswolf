@@ -36,8 +36,8 @@ struct IndexPage {
 struct RegisterPage;
 
 #[derive(Template)]
-#[template(path = "login.html")]
-struct LoginPage {
+#[template(path = "sign_in.html")]
+struct SignInPage {
     pub current_user: Option<User>,
 }
 
@@ -58,8 +58,8 @@ async fn register() -> RegisterPage {
     RegisterPage {}
 }
 
-async fn login() -> LoginPage {
-    LoginPage {
+async fn sign_in() -> SignInPage {
+    SignInPage {
         current_user: None,
     }
 }
@@ -82,7 +82,7 @@ async fn profile(
     }
 }
 
-async fn logout(mut auth: AuthContext) -> Redirect {
+async fn sign_out(mut auth: AuthContext) -> Redirect {
     let user = auth.current_user.clone();
     if let Some(user) = user {
         auth.logout().await;
@@ -120,8 +120,8 @@ async fn axum(
         .merge(SpaRouter::new("/static", static_folder))
         .route("/", get(index))
         .route("/register", get(register))
-        .route("/login", get(login))
-        .route("/logout", get(logout))
+        .route("/sign-in", get(sign_in))
+        .route("/sign-out", get(sign_out))
         .route("/auth/register_start/:username", post(auth::start_register))
         .route("/auth/register_finish", post(auth::finish_register))
         .route("/auth/authenticate_start/:username", post(auth::start_authentication))
