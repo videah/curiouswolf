@@ -1,0 +1,13 @@
+<nav class="flex justify-between p-2">
+  <a href="/" class="text-xl">curiouswolf</a>
+  <div class="flex">
+    {% match current_user %}
+    {% when Some with (user) %}
+    <span>Logged in as: {{ user.username }}</span>
+    <span class="px-2"> | </span>
+    <a href="/logout">Logout</a>
+    {% when None %}
+    <a href="/login">Login</a>
+    {% endmatch %}
+  </div>
+</nav>

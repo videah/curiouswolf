@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 
 {% block content %}
+{% include "elements/nav_bar.html" %}
 <h1>Hello, Worldddd</h1>
-<h2>Logged in: {{ user.is_some() }} </h2>
+<h2>Logged in: {{ current_user.is_some() }} </h2>
 <button hx-post="/hello" hx-swap="outerHTML">
     Click me
 </button>

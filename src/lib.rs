@@ -8,12 +8,13 @@ use std::path::PathBuf;
 use axum::{routing::get, routing::post, Router, Extension};
 use sync_wrapper::SyncWrapper;
 use askama::Template;
+use axum::extract::{Path, State};
 use axum::response::Redirect;
 use axum_extra::routing::SpaRouter;
 use axum_login::{AuthLayer, PostgresStore};
 use axum_login::axum_sessions::async_session::MemoryStore;
 use axum_sessions::{SameSite, SessionLayer};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres};
 
 use dotenv::dotenv;
 
@@ -27,7 +28,7 @@ extern crate tracing;
 #[derive(Template)]
 #[template(path = "index.html")]
 struct IndexPage {
-    pub user: Option<User>,
+    pub current_user: Option<User>,
 }
 
 #[derive(Template)]
@@ -38,9 +39,16 @@ struct RegisterPage;
 #[template(path = "login.html")]
 struct LoginPage;
 
+#[derive(Template)]
+#[template(path = "profile.html")]
+struct ProfilePage {
+    pub current_user: Option<User>,
+    pub user: User,
+}
+
 async fn index(auth: AuthContext) -> IndexPage {
     IndexPage {
-        user: auth.current_user
+        current_user: auth.current_user
     }
 }
 
@@ -50,6 +58,24 @@ async fn register() -> RegisterPage {
 
 async fn login() -> LoginPage {
     LoginPage {}
+}
+
+async fn profile(
+    auth: AuthContext,
+    Path(username): Path<String>,
+    State(db): State<PgPool>,
+) -> ProfilePage {
+    let user = sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
+        .bind(username)
+        .fetch_optional(&db)
+        .await
+        .unwrap()
+        .unwrap();
+
+    ProfilePage {
+        current_user: auth.current_user,
+        user
+    }
 }
 
 async fn logout(mut auth: AuthContext) -> Redirect {
@@ -96,6 +122,7 @@ async fn axum(
         .route("/auth/register_finish", post(auth::finish_register))
         .route("/auth/authenticate_start/:username", post(auth::start_authentication))
         .route("/auth/authenticate_finish", post(auth::finish_authentication))
+        .route("/@:user", get(profile))
         .route("/api/user/:username", get(api::user))
         .route("/ogp/image/:text", get(ogp::render_open_graph_card))
         .layer(Extension(auth_state))
