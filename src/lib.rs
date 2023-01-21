@@ -2,6 +2,7 @@ mod htmx;
 mod api;
 mod auth;
 mod models;
+mod ogp;
 
 use std::path::PathBuf;
 use axum::{routing::get, routing::post, Router, Extension};
@@ -96,6 +97,7 @@ async fn axum(
         .route("/auth/authenticate_start/:username", post(auth::start_authentication))
         .route("/auth/authenticate_finish", post(auth::finish_authentication))
         .route("/api/user/:username", get(api::user))
+        .route("/ogp/image/:text", get(ogp::render_open_graph_card))
         .layer(Extension(auth_state))
         .with_state(pool)
         .layer(auth_layer)
