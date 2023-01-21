@@ -33,7 +33,9 @@ struct IndexPage {
 
 #[derive(Template)]
 #[template(path = "register.html")]
-struct RegisterPage;
+struct RegisterPage {
+    pub current_user: Option<User>
+}
 
 #[derive(Template)]
 #[template(path = "sign_in.html")]
@@ -55,7 +57,9 @@ async fn index(auth: AuthContext) -> IndexPage {
 }
 
 async fn register() -> RegisterPage {
-    RegisterPage {}
+    RegisterPage {
+        current_user: None,
+    }
 }
 
 async fn sign_in() -> SignInPage {
