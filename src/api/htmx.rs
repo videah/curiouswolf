@@ -3,6 +3,7 @@ use axum::{Form, Json};
 use sqlx::{PgPool, Postgres};
 
 use serde::Deserialize;
+use crate::auth::AuthContext;
 
 use crate::htmx;
 use crate::models::{Question, User};
@@ -57,4 +58,31 @@ pub async fn post_question(
     htmx::Banner {
         body: "Question posted!",
     }
+}
+
+#[derive(Deserialize)]
+pub struct DeleteQuestion {
+    id: i32,
+}
+
+pub async fn delete_question(
+    State(db): State<PgPool>,
+    Path(id): Path<i32>,
+    mut auth: AuthContext,
+) -> htmx::Empty {
+
+    let query = r#"
+        DELETE FROM questions
+        WHERE
+            id = $1
+        RETURNING *
+    "#;
+
+    let question = sqlx::query_as::<Postgres, Question>(query)
+        .bind(id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+
+    htmx::Empty {}
 }

@@ -1,6 +1,10 @@
-<div class="round-card">
+<div class="question round-card hx-fade-out">
   <p>
     {{ question.body }}
   </p>
   <span class="text-grey">{{ question.created_at }}</span>
+  <div class="flex my-2">
+    <button type="submit" class="button ~info @high htmx-btn-indicator mr-2">Reply</button>
+    <button hx-delete="/htmx/question/{{ question.id }}" hx-swap="outerHTML swap:0.3s" hx-target="closest .question" type="submit" class="button ~critical @high htmx-btn-indicator" hx-confirm="Are you sure you wish to delete this question?">Delete</button>
+  </div>
 </div>

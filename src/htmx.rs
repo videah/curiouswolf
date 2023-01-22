@@ -5,6 +5,10 @@ use askama::Template;
 pub struct HelloWorld;
 
 #[derive(Template)]
+#[template(path = "htmx/empty.html")]
+pub struct Empty;
+
+#[derive(Template)]
 #[template(path = "htmx/question.html")]
 pub struct Question {
     pub question: crate::models::Question,

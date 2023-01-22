@@ -5,7 +5,7 @@ mod ogp;
 mod api;
 
 use std::path::PathBuf;
-use axum::{routing::get, routing::post, routing::put, Router, Extension};
+use axum::{routing::get, routing::post, routing::put, routing::delete, Router, Extension};
 use sync_wrapper::SyncWrapper;
 use askama::Template;
 use axum::extract::{Path, State};
@@ -157,6 +157,7 @@ async fn axum(
         .route("/inbox", get(inbox))
         .route("/ogp/image/:text", get(ogp::render_open_graph_card))
         .route("/htmx/question", put(api::htmx::post_question))
+        .route("/htmx/question/:id", delete(api::htmx::delete_question))
         .layer(Extension(auth_state))
         .with_state(pool)
         .layer(auth_layer)
