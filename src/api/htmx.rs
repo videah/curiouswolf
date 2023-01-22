@@ -5,7 +5,7 @@ use sqlx::{PgPool, Postgres};
 use serde::Deserialize;
 
 use crate::htmx;
-use crate::models::User;
+use crate::models::{Question, User};
 
 pub async fn hello() -> htmx::HelloWorld {
     htmx::HelloWorld {}
@@ -36,7 +36,7 @@ pub struct PostQuestion {
 pub async fn post_question(
     State(db): State<PgPool>,
     form: Form<PostQuestion>,
-) -> htmx::Question {
+) -> htmx::Banner {
     let form = form.0;
 
     let query = r#"
@@ -47,14 +47,14 @@ pub async fn post_question(
         RETURNING *
     "#;
 
-    let question = sqlx::query_as(query)
+    let question = sqlx::query_as::<Postgres, Question>(query)
         .bind(form.body)
         .bind(1)
         .fetch_one(&db)
         .await
         .unwrap();
 
-    htmx::Question {
-        question
+    htmx::Banner {
+        body: "Question posted!",
     }
 }

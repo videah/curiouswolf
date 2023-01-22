@@ -5,6 +5,8 @@
     {% when Some with (user) %}
     <a href="/@{{ user.username }}">{{ user.username }}</a>
     <span class="px-2"> | </span>
+    <a href="/inbox">inbox</a>
+    <span class="px-2"> | </span>
     <a href="/sign-out">Sign out</a>
     {% when None %}
     <a href="/sign-in">Sign in</a>

@@ -20,7 +20,7 @@ use dotenv::dotenv;
 
 use rand::prelude::*;
 use crate::auth::{AuthContext, AuthState};
-use crate::models::User;
+use crate::models::{Question, User};
 
 #[macro_use]
 extern crate tracing;
@@ -48,6 +48,13 @@ struct SignInPage {
 struct ProfilePage {
     pub current_user: Option<User>,
     pub user: User,
+}
+
+#[derive(Template)]
+#[template(path = "inbox.html")]
+struct InboxPage {
+    pub current_user: Option<User>,
+    pub questions: Vec<Question>,
 }
 
 async fn index(auth: AuthContext) -> IndexPage {
@@ -83,6 +90,22 @@ async fn profile(
     ProfilePage {
         current_user: auth.current_user,
         user
+    }
+}
+
+async fn inbox(
+    auth: AuthContext,
+    State(db): State<PgPool>,
+) -> InboxPage {
+    let questions = sqlx::query_as::<Postgres, Question>("SELECT * FROM questions WHERE recipient_id = $1")
+        .bind(auth.current_user.clone().unwrap().id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+
+    InboxPage {
+        current_user: auth.current_user,
+        questions
     }
 }
 
@@ -131,6 +154,7 @@ async fn axum(
         .route("/auth/authenticate_start/:username", post(auth::start_authentication))
         .route("/auth/authenticate_finish", post(auth::finish_authentication))
         .route("/@:user", get(profile))
+        .route("/inbox", get(inbox))
         .route("/ogp/image/:text", get(ogp::render_open_graph_card))
         .route("/htmx/question", put(api::htmx::post_question))
         .layer(Extension(auth_state))

@@ -22,4 +22,16 @@
     .htmx-request.htmx-btn-indicator {
         @apply loading;
     }
+
+    .hx-fade-out.htmx-swapping {
+        @apply opacity-0 transition-opacity duration-300;
+    }
+
+    .hx-fade-in.htmx-added {
+        @apply opacity-0
+    }
+
+    .hx-fade-in {
+        @apply opacity-100 transition-opacity duration-300;
+    }
 }

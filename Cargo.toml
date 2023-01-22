@@ -13,7 +13,7 @@ axum = "0.6.2"
 sync_wrapper = "0.1.1"
 askama = { version = "0.11.1", features = ["with-axum"] }
 askama_axum = "0.2.1"
-sqlx = { version = "0.6.2", features = ["runtime-tokio-native-tls", "postgres", "json", "uuid"] }
+sqlx = { version = "0.6.2", features = ["runtime-tokio-native-tls", "postgres", "json", "uuid", "chrono"] }
 webauthn-rs = { version = "0.4.8", features = ["danger-allow-state-serialisation"] }
 thiserror = "1.0.38"
 axum-sessions = "0.4.1"

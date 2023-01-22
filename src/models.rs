@@ -8,6 +8,8 @@ use axum_login::{
     AuthLayer, AuthUser, RequireAuthorizationLayer,
 };
 
+use axum_sessions::async_session::chrono::NaiveDateTime;
+
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, FromRow)]
@@ -15,6 +17,8 @@ pub struct Question {
     pub id: i32,
     pub body: String,
     pub recipient_id: i32,
+    pub created_at: NaiveDateTime,
+    pub updated_at: NaiveDateTime,
 }
 
 #[derive(Debug, FromRow)]

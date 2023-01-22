@@ -9,3 +9,9 @@ pub struct HelloWorld;
 pub struct Question {
     pub question: crate::models::Question,
 }
+
+#[derive(Template)]
+#[template(path = "htmx/banner.html")]
+pub struct Banner {
+    pub body: &'static str,
+}

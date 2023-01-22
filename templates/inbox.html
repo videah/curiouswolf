@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "elements/nav_bar.html" %}
+
+{% for question in questions %}
+  <div class="my-2">
+    {% include "htmx/question.html" %}
+  </div>
+{% endfor %}
+
+{% endblock %}
