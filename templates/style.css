@@ -14,4 +14,12 @@
     .round-card {
         @apply px-4 p-2 dark:bg-stone-800 rounded-xl shadow-lg;
     }
+
+    .htmx-request .htmx-btn-indicator {
+        @apply loading;
+    }
+
+    .htmx-request.htmx-btn-indicator {
+        @apply loading;
+    }
 }

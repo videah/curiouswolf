@@ -11,6 +11,13 @@ use axum_login::{
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, FromRow)]
+pub struct Question {
+    pub id: i32,
+    pub body: String,
+    pub recipient_id: i32,
+}
+
+#[derive(Debug, FromRow)]
 pub struct Credential {
     pub id: i32,
     pub user_uuid: Uuid,
