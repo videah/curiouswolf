@@ -1,35 +1,68 @@
 window.onload = function() {
     const { startRegistration } = SimpleWebAuthnBrowser;
 
+    const button = document.getElementById("register-button");
+    const error = document.getElementById("error-label");
+
+    let redirecting = false;
+
+    async function displayError(e) {
+        console.log(e);
+        button.classList.remove("loading");
+        error.innerText = await e.text();
+    }
+
     async function attemptRegistration() {
+        error.innerText = "";
+        button.classList.add("loading");
+
         const username = document.getElementById("username");
 
-        const resp = await fetch("/auth/register_start/" + username.value, {method: "POST"});
-
-        let attResp;
-        try {
-            const decoded = await resp.json()
-            attResp = await startRegistration(decoded["publicKey"]);
-        } catch (e) {
-            console.log(e);
+        if (username.value === "") {
+            error.innerText = "Username cannot be empty";
+            button.classList.remove("loading");
+            return;
         }
 
-        const url = "/auth/register_finish";
-        const verificationResp = await fetch(url, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify(attResp),
-        });
+        const resp = await fetch("/auth/register_start/" + username.value, {method: "POST"});
+        if (resp.status === 200) {
+            let attResp;
+            try {
+                const decoded = await resp.json()
+                attResp = await startRegistration(decoded["publicKey"]);
+            } catch (e) {
+                return displayError(e);
+            }
 
-        if (verificationResp.status === 200) {
-            alert("Success!");
+            const url = "/auth/register_finish";
+            const verificationResp = await fetch(url, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify(attResp),
+            });
+
+            if (verificationResp.status === 200) {
+                const success = document.getElementById("button-success");
+                const label = document.getElementById("button-label");
+
+                button.classList.remove("~info");
+                button.classList.remove("loading");
+                button.classList.add("~positive");
+
+                label.classList.add("hidden");
+                success.classList.remove("hidden");
+
+                await new Promise(r => setTimeout(r, 1000));
+                document.location.href = "/";
+            } else {
+                return displayError(verificationResp);
+            }
         } else {
-            alert("Failure!");
+            return displayError(resp);
         }
     }
 
-    const button = document.getElementById("register-button");
-    button.addEventListener("click", attemptRegistration);
+    button.addEventListener("click", () => {if (!redirecting) { attemptRegistration() }});
 }

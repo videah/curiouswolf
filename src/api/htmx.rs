@@ -31,6 +31,7 @@ pub async fn user(
 
 #[derive(Deserialize)]
 pub struct PostQuestion {
+    username: String,
     body: String,
 }
 
@@ -39,6 +40,17 @@ pub async fn post_question(
     form: Form<PostQuestion>,
 ) -> htmx::Banner {
     let form = form.0;
+
+    let user_query = r#"
+        SELECT * FROM users
+        WHERE username = $1
+    "#;
+
+    let user = sqlx::query_as::<Postgres, User>(user_query)
+        .bind(form.username)
+        .fetch_one(&db)
+        .await
+        .unwrap();
 
     let query = r#"
         INSERT INTO questions
@@ -50,7 +62,7 @@ pub async fn post_question(
 
     let question = sqlx::query_as::<Postgres, Question>(query)
         .bind(form.body)
-        .bind(1)
+        .bind(user.id)
         .fetch_one(&db)
         .await
         .unwrap();
@@ -75,11 +87,13 @@ pub async fn delete_question(
         DELETE FROM questions
         WHERE
             id = $1
+            AND recipient_id = $2
         RETURNING *
     "#;
 
     let question = sqlx::query_as::<Postgres, Question>(query)
         .bind(id)
+        .bind(auth.current_user.unwrap().id)
         .fetch_one(&db)
         .await
         .unwrap();

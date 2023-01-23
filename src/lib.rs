@@ -4,6 +4,7 @@ mod models;
 mod ogp;
 mod api;
 
+use std::cmp::Reverse;
 use std::path::PathBuf;
 use axum::{routing::get, routing::post, routing::put, routing::delete, Router, Extension};
 use sync_wrapper::SyncWrapper;
@@ -97,11 +98,13 @@ async fn inbox(
     auth: AuthContext,
     State(db): State<PgPool>,
 ) -> InboxPage {
-    let questions = sqlx::query_as::<Postgres, Question>("SELECT * FROM questions WHERE recipient_id = $1")
+    let mut questions = sqlx::query_as::<Postgres, Question>("SELECT * FROM questions WHERE recipient_id = $1")
         .bind(auth.current_user.clone().unwrap().id)
         .fetch_all(&db)
         .await
         .unwrap();
+
+    questions.sort_by_key(|q| Reverse(q.created_at));
 
     InboxPage {
         current_user: auth.current_user,

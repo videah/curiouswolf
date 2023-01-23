@@ -13,7 +13,7 @@ use crate::models::{Credential, User};
 pub type AuthContext = axum_login::extractors::AuthContext<i32, User, PostgresStore<User>>;
 
 #[derive(Error, Debug)]
-pub enum WebauthnError {
+pub enum AuthError {
     #[error("Unknown webauthn error")]
     Unknown,
     #[error("Corrupt Session")]
@@ -22,6 +22,10 @@ pub enum WebauthnError {
     UserNotFound,
     #[error("User Has No Credentials")]
     UserHasNoCredentials,
+    #[error("User Already Exists")]
+    UserAlreadyExists,
+    #[error("Invalid Username")]
+    InvalidUsername,
 }
 
 #[derive(Clone)]
@@ -41,16 +45,18 @@ impl AuthState {
     }
 }
 
-impl IntoResponse for WebauthnError {
+impl IntoResponse for AuthError {
     fn into_response(self) -> Response {
-        let body = match self {
-            WebauthnError::CorruptSession => "Corrupt Session",
-            WebauthnError::UserNotFound => "User Not Found",
-            WebauthnError::Unknown => "Unknown Error",
-            WebauthnError::UserHasNoCredentials => "User Has No Credentials",
+        let status = match self {
+            AuthError::CorruptSession => (StatusCode::INTERNAL_SERVER_ERROR, "Corrupt Session"),
+            AuthError::UserNotFound => (StatusCode::NOT_FOUND, "No such user exists"),
+            AuthError::Unknown => (StatusCode::INTERNAL_SERVER_ERROR, "Unknown Error"),
+            AuthError::UserHasNoCredentials => (StatusCode::NOT_FOUND, "User has no credentials"),
+            AuthError::UserAlreadyExists => (StatusCode::CONFLICT, "This username is already taken"),
+            AuthError::InvalidUsername => (StatusCode::UNPROCESSABLE_ENTITY, "Username is invalid"),
         };
 
-        (StatusCode::INTERNAL_SERVER_ERROR, body).into_response()
+        status.into_response()
     }
 }
 
@@ -59,9 +65,23 @@ pub async fn start_register(
     mut session: WritableSession,
     Path(username): Path<String>,
     State(db): State<PgPool>,
-) -> Result<impl IntoResponse, WebauthnError> {
-
+) -> Result<impl IntoResponse, AuthError> {
     let user_unique_id = Uuid::new_v4();
+
+    // Make sure username is valid (doesn't contain spaces, only alphanumeric, etc.)
+    if !username.chars().all(|c| c.is_alphanumeric() || c == '_') {
+        return Err(AuthError::InvalidUsername);
+    }
+
+    // Make sure username is not already taken
+    let user = sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
+        .bind(&username)
+        .fetch_optional(&db)
+        .await
+        .expect("Failed to pull user from database");
+    if user.is_some() {
+        return Err(AuthError::UserAlreadyExists);
+    }
 
     // Remove any previous registrations that may have occurred from the session.
     session.remove("reg_state");
@@ -94,7 +114,7 @@ pub async fn start_register(
         },
         Err(e) => {
             debug!("challenge_register -> {:?}", e);
-            return Err(WebauthnError::Unknown);
+            return Err(AuthError::Unknown);
         }
     };
 
@@ -106,11 +126,11 @@ pub async fn finish_register(
     mut session: WritableSession,
     State(db): State<PgPool>,
     Json(reg): Json<RegisterPublicKeyCredential>,
-) -> Result<impl IntoResponse, WebauthnError> {
+) -> Result<impl IntoResponse, AuthError> {
     info!("Attempting to complete registration");
     let (username, user_unique_id, reg_state): (String, Uuid, PasskeyRegistration) = session
         .get("reg_state")
-        .ok_or(WebauthnError::CorruptSession)?;
+        .ok_or(AuthError::CorruptSession)?;
     info!("Got registration state from session");
 
     session.remove("reg_state");
@@ -171,7 +191,7 @@ pub async fn start_authentication(
     mut session: WritableSession,
     Path(username): Path<String>,
     State(db): State<PgPool>,
-) -> Result<impl IntoResponse, WebauthnError> {
+) -> Result<impl IntoResponse, AuthError> {
 
     session.remove("auth_state");
 
@@ -182,7 +202,7 @@ pub async fn start_authentication(
             .fetch_optional(&db)
             .await
             .unwrap()
-            .ok_or(WebauthnError::UserNotFound)?
+            .ok_or(AuthError::UserNotFound)?
     };
 
     let passkeys: Vec<Passkey> = {
@@ -208,7 +228,7 @@ pub async fn start_authentication(
         }
         Err(e) => {
             debug!("challenge_authenticate -> {:?}", e);
-            return Err(WebauthnError::Unknown);
+            return Err(AuthError::Unknown);
         }
     };
 
@@ -221,12 +241,12 @@ pub async fn finish_authentication(
     mut auth_provider: AuthContext,
     State(db): State<PgPool>,
     Json(auth): Json<PublicKeyCredential>,
-) -> Result<impl IntoResponse, WebauthnError> {
+) -> Result<impl IntoResponse, AuthError> {
 
     info!("Attempting to complete authentication");
     let (user_unique_id, auth_state, user): (Uuid, PasskeyAuthentication, User) = session
         .get("auth_state")
-        .ok_or(WebauthnError::CorruptSession)?;
+        .ok_or(AuthError::CorruptSession)?;
     info!("Got authentication state from session");
 
     session.remove("auth_state");

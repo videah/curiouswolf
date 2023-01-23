@@ -34,4 +34,8 @@
     .hx-fade-in {
         @apply opacity-100 transition-opacity duration-300;
     }
+
+    .loading > #button-label > .icon {
+        @apply opacity-0;
+    }
 }

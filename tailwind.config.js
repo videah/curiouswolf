@@ -2,7 +2,7 @@
 let colors = require("tailwindcss/colors")
 module.exports = {
     darkMode: 'class',
-    content: ["./templates/**/*.{html,js}"],
+    content: ["./templates/**/*.{html,js}", "./static/**/*.{html,js}"],
     theme: {
         extend: {
             colors: {
