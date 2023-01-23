@@ -124,6 +124,7 @@ pub async fn start_register(
 pub async fn finish_register(
     Extension(state): Extension<AuthState>,
     mut session: WritableSession,
+    mut auth_provider: AuthContext,
     State(db): State<PgPool>,
     Json(reg): Json<RegisterPublicKeyCredential>,
 ) -> Result<impl IntoResponse, AuthError> {
@@ -151,10 +152,10 @@ pub async fn finish_register(
                 returning *
             "#;
 
-            sqlx::query(user_query)
+            let user = sqlx::query_as::<Postgres, User>(user_query)
                 .bind(username)
                 .bind(user_unique_id)
-                .execute(&mut tx)
+                .fetch_one(&mut tx)
                 .await
                 .expect("Could not create user");
 
@@ -174,6 +175,13 @@ pub async fn finish_register(
                 .expect("Could not create credential");
 
             tx.commit().await.expect("Failed to commit transaction");
+
+            // We need to drop our current handle or the auth_provide will deadlock us when it
+            // tries to grab a lock on the session.
+            drop(session);
+
+            auth_provider.login(&user).await.expect("Failed to sign in user via session.");
+            info!("User successfully registered: {:?}", user);
 
             StatusCode::OK
         }

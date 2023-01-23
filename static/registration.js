@@ -54,7 +54,7 @@ window.onload = function() {
                 label.classList.add("hidden");
                 success.classList.remove("hidden");
 
-                await new Promise(r => setTimeout(r, 1000));
+                await new Promise(r => setTimeout(r, 300));
                 document.location.href = "/";
             } else {
                 return displayError(verificationResp);
