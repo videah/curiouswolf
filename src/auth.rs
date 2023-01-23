@@ -180,6 +180,14 @@ pub async fn finish_register(
             // tries to grab a lock on the session.
             drop(session);
 
+            // If the user is the first user, make them an admin.
+            if user.id == 1 {
+                sqlx::query("UPDATE users SET role = 'admin' WHERE id = 1")
+                    .execute(&db)
+                    .await
+                    .expect("Failed to make first user an admin");
+            }
+
             auth_provider.login(&user).await.expect("Failed to sign in user via session.");
             info!("User successfully registered: {:?}", user);
 
