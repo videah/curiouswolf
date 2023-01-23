@@ -7,7 +7,7 @@
   <div class="flex my-2">
     <button
             hx-put="/htmx/answer/{{ question.id }}" hx-swap="outerHTML swap:0.3s"
-            hx-target="closest .question" type="submit" class="button ~info @high htmx-btn-indicator"
+            hx-target="closest .question" type="submit" class="mr-2 button ~info @high htmx-btn-indicator"
             hx-prompt="What is your answer?">
       Reply
     </button>

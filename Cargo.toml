@@ -1,6 +1,6 @@
 [package]
 name = "curiouswolf"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2021"
 publish = false
 
@@ -22,10 +22,11 @@ serde = { version = "1.0.152", features = ["derive"] }
 tracing = "0.1.37"
 axum-extra = { version = "0.4.2", features = ["spa"] }
 shuttle-static-folder = "0.8.0"
-dotenv = "0.15.0"
 axum-login = { git = "https://github.com/videah/axum-login", features = ["postgres", "sqlx-runtime-tokio-native-tls"] }
 # resvg = "0.28.0"
 http = "0.2.8"
 chrono-humanize = "0.2.2"
 chrono = "0.4.23"
 async-trait = "0.1.63"
+shuttle-secrets = "0.8.0"
+urlencoding = "2.1.2"

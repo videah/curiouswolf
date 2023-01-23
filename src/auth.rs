@@ -30,18 +30,18 @@ pub enum AuthError {
 
 #[derive(Clone)]
 pub struct AuthState {
-    pub webauthn: Arc<Webauthn>
+    pub webauthn: Arc<Webauthn>,
+    pub hostname: String,
 }
 
 impl AuthState {
-    pub fn new() -> AuthState {
-        let rp_id = std::env::var("CURIOUSWOLF_HOSTNAME").unwrap();
+    pub fn new(rp_id: String) -> AuthState {
         let rp_origin = Url::parse(&format!("https://{rp_id}")).unwrap();
         let builder = WebauthnBuilder::new(&rp_id, &rp_origin).unwrap();
         let builder = builder.rp_name("curiouswolf");
 
         let webauthn = Arc::new(builder.build().unwrap());
-        AuthState { webauthn }
+        AuthState { webauthn, hostname: rp_id }
     }
 }
 

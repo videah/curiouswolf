@@ -17,7 +17,7 @@ use axum_login::axum_sessions::async_session::MemoryStore;
 use axum_sessions::{SameSite, SessionLayer};
 use sqlx::{PgPool, Postgres};
 
-use dotenv::dotenv;
+use shuttle_secrets::SecretStore;
 
 use rand::prelude::*;
 use crate::auth::{AuthContext, AuthState};
@@ -105,6 +105,7 @@ async fn profile(
             SELECT * FROM answers
             WHERE answers.question_id = questions.id
         )
+        ORDER BY created_at DESC
     "#;
 
     let questions = sqlx::query_as::<Postgres, Question>(question_query)
@@ -120,7 +121,9 @@ async fn profile(
     // Get answers for each question
     let answer_query = r#"
         SELECT * FROM answers
-        WHERE question_id = ANY($1)
+        JOIN unnest($1::int[]) WITH ORDINALITY AS qid(id, ord)
+            ON answers.question_id = qid.id
+        ORDER BY qid.ord
     "#;
 
     let answers = sqlx::query_as::<Postgres, Answer>(answer_query)
@@ -128,7 +131,6 @@ async fn profile(
         .fetch_all(&db)
         .await
         .unwrap();
-    println!("{:?}", answers);
 
     // Create a vector of QnAPairs
     let mut pairs: Vec<(Question, Answer)> = questions
@@ -202,9 +204,9 @@ async fn admin(
 async fn axum(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_static_folder::StaticFolder] static_folder: PathBuf,
+    #[shuttle_secrets::Secrets] secret_store: SecretStore,
 ) -> shuttle_service::ShuttleAxum {
-
-    dotenv().ok();
+    let hostname = secret_store.get("CURIOUSWOLF_HOSTNAME").unwrap();
 
     println!("Running database migrations...");
     sqlx::migrate!().run(&pool).await.unwrap();
@@ -218,10 +220,9 @@ async fn axum(
         .with_same_site_policy(SameSite::Lax)
         .with_secure(true);
 
-
     let user_store = PostgresStore::<User, Role>::new(pool.clone());
     let auth_layer = AuthLayer::new(user_store, &secret);
-    let auth_state = AuthState::new();
+    let auth_state = AuthState::new(hostname);
 
     let router = Router::new()
         .route("/admin", get(admin))

@@ -4,6 +4,7 @@ use http::HeaderMap;
 use sqlx::{PgPool, Postgres};
 
 use serde::Deserialize;
+use urlencoding::decode;
 use crate::auth::AuthContext;
 
 use crate::htmx;
@@ -118,6 +119,7 @@ pub async fn post_answer(
     State(db): State<PgPool>,
 ) -> htmx::Banner {
     let body = headers.get("HX-Prompt").unwrap().to_str().unwrap();
+    let decoded = decode(body).unwrap().into_owned();
 
     let query = r#"
         INSERT INTO answers
@@ -128,7 +130,7 @@ pub async fn post_answer(
     "#;
 
     let question = sqlx::query_as::<Postgres, Answer>(query)
-        .bind(body)
+        .bind(decoded)
         .bind(id)
         .fetch_one(&db)
         .await
