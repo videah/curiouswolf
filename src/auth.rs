@@ -107,7 +107,6 @@ pub async fn finish_register(
     State(db): State<PgPool>,
     Json(reg): Json<RegisterPublicKeyCredential>,
 ) -> Result<impl IntoResponse, WebauthnError> {
-
     info!("Attempting to complete registration");
     let (username, user_unique_id, reg_state): (String, Uuid, PasskeyRegistration) = session
         .get("reg_state")

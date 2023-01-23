@@ -4,9 +4,11 @@
 {% include "elements/nav_bar.html" %}
 <h1>This is the profile for @{{user.username}}</h1>
 
-<form hx-put="/htmx/question" hx-indicator="#submit-question" hx-swap="outerHTML swap:0.3s" class="flex flex-col hx-fade-out">
+<form id="question-form" hx-put="/htmx/question" hx-indicator="#submit-question" hx-swap="outerHTML swap:0.3s" class="flex flex-col hx-fade-out">
     <textarea name="body" class="text-black my-2 rounded-sm" cols="40" rows="5"></textarea>
-    <button id="submit-question" type="submit" class="button button-xl ~info @high htmx-btn-indicator">Post</button>
+    <button id="submit-question" class="button button-xl ~info @high htmx-btn-indicator">
+        Post
+    </button>
 </form>
 
 {% endblock %}
