@@ -38,4 +38,8 @@
     .loading > #button-label > .icon {
         @apply opacity-0;
     }
+
+    .text-hr {
+        @apply my-4 border-stone-700 after:content-[attr(title)] text-center after:inline-block after:relative after:-top-3 after:bg-stone-900 after:px-2 after:text-stone-600;
+    }
 }
