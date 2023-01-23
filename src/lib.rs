@@ -124,11 +124,12 @@ async fn profile(
     println!("{:?}", answers);
 
     // Create a vector of QnAPairs
-    let pairs: Vec<(Question, Answer)> = questions
+    let mut pairs: Vec<(Question, Answer)> = questions
         .into_iter()
         .zip(answers.into_iter())
         .collect();
 
+    pairs.sort_by_key(|(_, a)| Reverse(a.created_at));
 
     ProfilePage {
         current_user: auth.current_user,

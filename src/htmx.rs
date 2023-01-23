@@ -17,5 +17,5 @@ pub struct Question {
 #[derive(Template)]
 #[template(path = "htmx/banner.html")]
 pub struct Banner {
-    pub body: &'static str,
+    pub body: String,
 }

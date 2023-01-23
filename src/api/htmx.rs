@@ -42,6 +42,11 @@ pub async fn post_question(
 ) -> htmx::Banner {
     let form = form.0;
 
+    // Make sure the question body string is not empty
+    if form.body.is_empty() {
+        panic!("Question body cannot be empty");
+    }
+
     let user_query = r#"
         SELECT * FROM users
         WHERE username = $1
@@ -69,7 +74,7 @@ pub async fn post_question(
         .unwrap();
 
     htmx::Banner {
-        body: "Question posted!",
+        body: format!("Question sent! @{} will hopefully read and answer it soon.", user.username),
     }
 }
 
@@ -130,6 +135,6 @@ pub async fn post_answer(
         .unwrap();
 
     htmx::Banner {
-        body: "Answer posted!",
+        body: "Answer posted!".to_string(),
     }
 }

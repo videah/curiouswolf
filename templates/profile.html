@@ -6,7 +6,7 @@
 
 <form id="question-form" hx-put="/htmx/question" hx-indicator="#submit-question" hx-swap="outerHTML swap:0.3s" class="flex flex-col hx-fade-out">
     <input type="hidden" name="username" value="{{ user.username }}">
-    <textarea name="body" class="text-black my-4 rounded-sm" cols="40" rows="5" placeholder="What's the meaning of life?"></textarea>
+    <textarea name="body" class="my-4 text-white placeholder-stone-600 bg-stone-900 border border-stone-600 rounded-md p-2" cols="40" rows="5" placeholder="What's the meaning of life?"></textarea>
     <button id="submit-question" class="button button-xl ~info @high htmx-btn-indicator">
         Ask Question
     </button>
