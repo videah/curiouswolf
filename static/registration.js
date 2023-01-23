@@ -3,6 +3,7 @@ window.onload = function() {
 
     const button = document.getElementById("register-button");
     const error = document.getElementById("error-label");
+    const username = document.getElementById("username");
 
     let redirecting = false;
 
@@ -15,8 +16,6 @@ window.onload = function() {
     async function attemptRegistration() {
         error.innerText = "";
         button.classList.add("loading");
-
-        const username = document.getElementById("username");
 
         if (username.value === "") {
             error.innerText = "Username cannot be empty";
@@ -65,4 +64,5 @@ window.onload = function() {
     }
 
     button.addEventListener("click", () => {if (!redirecting) { attemptRegistration() }});
+    username.addEventListener("keydown", (e) => {if (e.key === "Enter") { attemptRegistration() }});
 }

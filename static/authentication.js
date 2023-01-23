@@ -3,6 +3,7 @@ window.onload = function() {
 
     const button = document.getElementById("sign-in-button");
     const error = document.getElementById("error-label");
+    const username = document.getElementById("username");
 
     let redirecting = false;
 
@@ -74,4 +75,5 @@ window.onload = function() {
     }
 
     button.addEventListener("click", () => {if (!redirecting) { attemptAuthentication() }});
+    username.addEventListener("keydown", (e) => {if (e.key === "Enter") { attemptAuthentication() }});
 }
