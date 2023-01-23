@@ -5,4 +5,5 @@ Experimenting with esoteric tech such as [htmx](https://htmx.org) and [shuttle](
 
 ## Features
  - [Passkey user authentication](https://passkeys.dev)
- - Not much else so far 🐺
+ - Basic user interface using [Tailwind](https://tailwindcss.com)
+ - Very basic Q&A functionality
