@@ -6,10 +6,30 @@
 
 <form id="question-form" hx-put="/htmx/question" hx-indicator="#submit-question" hx-swap="outerHTML swap:0.3s" class="flex flex-col hx-fade-out">
     <input type="hidden" name="username" value="{{ user.username }}">
-    <textarea name="body" class="text-black my-2 rounded-sm" cols="40" rows="5" placeholder="What's the meaning of life?"></textarea>
+    <textarea name="body" class="text-black my-4 rounded-sm" cols="40" rows="5" placeholder="What's the meaning of life?"></textarea>
     <button id="submit-question" class="button button-xl ~info @high htmx-btn-indicator">
         Ask Question
     </button>
 </form>
+<hr class="my-4 border-stone-600">
+<div id="answers">
+    {% for pair in answers %}
+    {% let question = pair.0.clone() %}
+    {% let answer = pair.1.clone() %}
+        {% let answer_human_time = chrono_humanize::HumanTime::from(answer.created_at.clone()) %}
+        {% let question_human_time = chrono_humanize::HumanTime::from(question.created_at.clone()) %}
+        <div class="question round-card hx-fade-out my-4">
+            <p class="text-stone-500">Asked by Anonymous - {{ answer_human_time }}</p>
+            <p>
+                {{ question.body }}
+            </p>
+            <hr class="my-4 border-stone-600">
+            <p class="text-stone-500">Answer - {{ answer_human_time }}</p>
+            <p>
+                {{ answer.body }}
+            </p>
+        </div>
+    {% endfor %}
+</div>
 
 {% endblock %}

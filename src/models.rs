@@ -12,13 +12,28 @@ use axum_sessions::async_session::chrono::{DateTime, NaiveDateTime, Utc};
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, FromRow)]
+#[derive(Debug, Clone, FromRow)]
 pub struct Question {
     pub id: i32,
     pub body: String,
     pub recipient_id: i32,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug, Clone, FromRow)]
+pub struct Answer {
+    pub id: i32,
+    pub body: String,
+    pub question_id: i32,
+    pub created_at: DateTime<Utc>,
+    pub updated_at: DateTime<Utc>,
+}
+
+#[derive(Debug)]
+pub struct QnAPair {
+    pub question: Question,
+    pub answer: Answer,
 }
 
 #[derive(Debug, FromRow)]

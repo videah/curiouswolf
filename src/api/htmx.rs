@@ -1,12 +1,13 @@
 use axum::extract::{Path, State};
 use axum::{Form, Json};
+use http::HeaderMap;
 use sqlx::{PgPool, Postgres};
 
 use serde::Deserialize;
 use crate::auth::AuthContext;
 
 use crate::htmx;
-use crate::models::{Question, User};
+use crate::models::{Answer, Question, User};
 
 pub async fn hello() -> htmx::HelloWorld {
     htmx::HelloWorld {}
@@ -99,4 +100,36 @@ pub async fn delete_question(
         .unwrap();
 
     htmx::Empty {}
+}
+
+#[derive(Deserialize)]
+pub struct PostAnswer {
+    question_id: i32,
+}
+
+pub async fn post_answer(
+    headers: HeaderMap,
+    Path(id): Path<i32>,
+    State(db): State<PgPool>,
+) -> htmx::Banner {
+    let body = headers.get("HX-Prompt").unwrap().to_str().unwrap();
+
+    let query = r#"
+        INSERT INTO answers
+            ( body, question_id )
+        VALUES
+            ( $1, $2 )
+        RETURNING *
+    "#;
+
+    let question = sqlx::query_as::<Postgres, Answer>(query)
+        .bind(body)
+        .bind(id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+
+    htmx::Banner {
+        body: "Answer posted!",
+    }
 }

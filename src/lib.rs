@@ -21,7 +21,7 @@ use dotenv::dotenv;
 
 use rand::prelude::*;
 use crate::auth::{AuthContext, AuthState};
-use crate::models::{Question, User};
+use crate::models::{Answer, QnAPair, Question, User};
 
 #[macro_use]
 extern crate tracing;
@@ -49,6 +49,7 @@ struct SignInPage {
 struct ProfilePage {
     pub current_user: Option<User>,
     pub user: User,
+    pub answers: Vec<(Question, Answer)>,
 }
 
 #[derive(Template)]
@@ -81,6 +82,7 @@ async fn profile(
     Path(username): Path<String>,
     State(db): State<PgPool>,
 ) -> ProfilePage {
+
     let user = sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
         .bind(username)
         .fetch_optional(&db)
@@ -88,9 +90,50 @@ async fn profile(
         .unwrap()
         .unwrap();
 
+    // Get all questions with an answer
+    let question_query = r#"
+        SELECT * FROM questions
+        WHERE recipient_id = $1
+        AND EXISTS (
+            SELECT * FROM answers
+            WHERE answers.question_id = questions.id
+        )
+    "#;
+
+    let questions = sqlx::query_as::<Postgres, Question>(question_query)
+        .bind(user.id)
+        .fetch_all(&db)
+        .await
+        .unwrap();
+
+    // Get list of question ids
+    let question_ids: Vec<i32> = questions.iter().map(|q| q.id).collect();
+    println!("{:?}", question_ids);
+
+    // Get answers for each question
+    let answer_query = r#"
+        SELECT * FROM answers
+        WHERE question_id = ANY($1)
+    "#;
+
+    let answers = sqlx::query_as::<Postgres, Answer>(answer_query)
+        .bind(&question_ids[..])
+        .fetch_all(&db)
+        .await
+        .unwrap();
+    println!("{:?}", answers);
+
+    // Create a vector of QnAPairs
+    let pairs: Vec<(Question, Answer)> = questions
+        .into_iter()
+        .zip(answers.into_iter())
+        .collect();
+
+
     ProfilePage {
         current_user: auth.current_user,
-        user
+        user,
+        answers: pairs,
     }
 }
 
@@ -98,7 +141,17 @@ async fn inbox(
     auth: AuthContext,
     State(db): State<PgPool>,
 ) -> InboxPage {
-    let mut questions = sqlx::query_as::<Postgres, Question>("SELECT * FROM questions WHERE recipient_id = $1")
+
+    let query = r#"
+        SELECT * FROM questions
+        WHERE recipient_id = $1
+        AND NOT EXISTS (
+            SELECT * FROM answers
+            WHERE answers.question_id = questions.id
+        )
+    "#;
+
+    let mut questions = sqlx::query_as::<Postgres, Question>(query)
         .bind(auth.current_user.clone().unwrap().id)
         .fetch_all(&db)
         .await
@@ -161,6 +214,7 @@ async fn axum(
         .route("/ogp/image/:text", get(ogp::render_open_graph_card))
         .route("/htmx/question", put(api::htmx::post_question))
         .route("/htmx/question/:id", delete(api::htmx::delete_question))
+        .route("/htmx/answer/:id", put(api::htmx::post_answer))
         .layer(Extension(auth_state))
         .with_state(pool)
         .layer(auth_layer)
