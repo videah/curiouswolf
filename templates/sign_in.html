@@ -9,11 +9,16 @@
 {% include "elements/nav_bar.html" %}
 <div class="round-card flex flex-col p-8 max-w-md mt-32 mx-auto">
     <label class="font-semibold" for="username">Username</label>
-    <input class="text-white my-2 placeholder-stone-600 bg-stone-900 border border-stone-600 rounded-md p-2" type="text" id="username" name="username" autocapitalize="off">
+    <input class="text-white my-2 placeholder-stone-600 bg-stone-900 border border-stone-600 rounded-md p-2" type="text" id="username" name="username">
     <p id="error-label" class="support text-red-500"></p>
-    <button id="login-button" class="mt-4 button button-xl ~info @high">
-        {% include "elements/passkey_icon.html" %}
-        <span class="ml-4 font-semibold">Sign In With Passkey</span>
+    <button id="sign-in-button" class="transition-all mt-4 button button-xl ~info @high">
+        <div id="button-label" class="flex items-center">
+            {% include "elements/passkey_icon.html" %}
+            <span class="ml-2 font-semibold">Sign In With Passkey</span>
+        </div>
+        <svg id="button-success" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="hidden w-6 h-6">
+            <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 10-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.14-.094l3.75-5.25z" clip-rule="evenodd" />
+        </svg>
     </button>
 </div>
 {% endblock %}
