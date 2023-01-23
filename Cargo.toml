@@ -24,7 +24,7 @@ axum-extra = { version = "0.4.2", features = ["spa"] }
 shuttle-static-folder = "0.8.0"
 dotenv = "0.15.0"
 axum-login = { git = "https://github.com/videah/axum-login", features = ["postgres", "sqlx-runtime-tokio-native-tls"] }
-resvg = "0.28.0"
+# resvg = "0.28.0"
 http = "0.2.8"
 chrono-humanize = "0.2.2"
 chrono = "0.4.23"
