@@ -3,7 +3,9 @@
 {% block content %}
 {% include "elements/nav_bar.html" %}
 <div class="round-card">
-    <h1>Hello, World</h1>
-    <h2>Logged in: {{ current_user.is_some() }} </h2>
+    {% include "elements/wolf_icon.html" %}
+    <h1 class="text-center pb-2 text-4xl font-semibold">curiouswolf</h1>
+    <p class="text-center pb-4 text-stone-500">A small open source anonymous Q&A social media platform. Written in Rust.</p>
+    <p class="text-center pb-4 text-blue-500 hover:underline"><a href="https://github.com/videah/curiouswolf">View on Github</a></p>
 </div>
 {% endblock %}
