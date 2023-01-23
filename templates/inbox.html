@@ -3,6 +3,10 @@
 {% block content %}
 {% include "elements/nav_bar.html" %}
 
+{% if questions.is_empty() %}
+<p class="text-center">You have no questions in your inbox.</p>
+{% endif %}
+
 {% for question in questions %}
   <div class="my-2">
     {% include "htmx/question.html" %}
