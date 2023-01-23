@@ -8,9 +8,9 @@ use sqlx::{PgPool, Postgres};
 use webauthn_rs::prelude::*;
 use thiserror::Error;
 
-use crate::models::{Credential, User};
+use crate::models::{Credential, Role, User};
 
-pub type AuthContext = axum_login::extractors::AuthContext<i32, User, PostgresStore<User>>;
+pub type AuthContext = axum_login::extractors::AuthContext<i32, User, PostgresStore<User, Role>, Role>;
 
 #[derive(Error, Debug)]
 pub enum AuthError {

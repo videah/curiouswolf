@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block content %}
+{% include "elements/nav_bar.html" %}
+
+<div class="round-card">
+    <h1 class="text-xl">Admin Dashboard</h1>
+    <hr class="mb-4 mt-1 border-stone-600">
+    <table class="table">
+        <thead>
+        <tr>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Created</th>
+        </tr>
+        </thead>
+        <tbody>
+        {% for user in users %}
+            <tr>
+                <td>{{ user.username }}</td>
+                <td>{{ user.role }}</td>
+                <td>{{ user.created_at.format("%Y-%m-%d %H:%M:%S") }} </td>
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+
+{% endblock %}

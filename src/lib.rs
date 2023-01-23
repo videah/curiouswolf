@@ -12,7 +12,7 @@ use askama::Template;
 use axum::extract::{Path, State};
 use axum::response::Redirect;
 use axum_extra::routing::SpaRouter;
-use axum_login::{AuthLayer, PostgresStore};
+use axum_login::{AuthLayer, PostgresStore, RequireAuthorizationLayer};
 use axum_login::axum_sessions::async_session::MemoryStore;
 use axum_sessions::{SameSite, SessionLayer};
 use sqlx::{PgPool, Postgres};
@@ -21,7 +21,7 @@ use dotenv::dotenv;
 
 use rand::prelude::*;
 use crate::auth::{AuthContext, AuthState};
-use crate::models::{Answer, QnAPair, Question, User};
+use crate::models::{Answer, Question, RequireAdmin, Role, User};
 
 #[macro_use]
 extern crate tracing;
@@ -57,6 +57,13 @@ struct ProfilePage {
 struct InboxPage {
     pub current_user: Option<User>,
     pub questions: Vec<Question>,
+}
+
+#[derive(Template)]
+#[template(path = "admin.html")]
+struct AdminPage {
+    pub current_user: Option<User>,
+    pub users: Vec<User>,
 }
 
 async fn index(auth: AuthContext) -> IndexPage {
@@ -175,6 +182,22 @@ async fn sign_out(mut auth: AuthContext) -> Redirect {
     Redirect::permanent("/")
 }
 
+async fn admin(
+    RequireAdmin(user): RequireAdmin,
+    State(db): State<PgPool>,
+) -> AdminPage {
+
+    let users = sqlx::query_as::<Postgres, User>("SELECT * FROM users")
+        .fetch_all(&db)
+        .await
+        .unwrap();
+
+    AdminPage {
+        current_user: Some(user),
+        users,
+    }
+}
+
 #[shuttle_service::main]
 async fn axum(
     #[shuttle_shared_db::Postgres] pool: PgPool,
@@ -196,11 +219,13 @@ async fn axum(
         .with_secure(true);
 
 
-    let user_store = PostgresStore::<User>::new(pool.clone());
+    let user_store = PostgresStore::<User, Role>::new(pool.clone());
     let auth_layer = AuthLayer::new(user_store, &secret);
     let auth_state = AuthState::new();
 
     let router = Router::new()
+        .route("/admin", get(admin))
+        .route_layer(RequireAuthorizationLayer::<i32, User, Role>::login())
         .merge(SpaRouter::new("/static", static_folder))
         .route("/", get(index))
         .route("/register", get(register))

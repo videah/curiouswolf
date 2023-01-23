@@ -1,7 +1,10 @@
+CREATE TYPE ROLE AS ENUM ('user', 'admin');
+
 CREATE TABLE users (
     id SERIAL PRIMARY KEY NOT NULL,
     uuid UUID UNIQUE NOT NULL,
     username VARCHAR(15) NOT NULL UNIQUE,
+    role ROLE NOT NULL DEFAULT 'user',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
