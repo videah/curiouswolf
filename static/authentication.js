@@ -9,7 +9,16 @@ window.onload = function() {
     async function displayError(e) {
         console.log(e);
         button.classList.remove("loading");
-        error.innerText = await e.text();
+        try {
+            error.innerText = await e.text();
+        } catch {
+            if (e.name === "NotAllowedError") {
+                error.innerText = "Attempt to sign in was either cancelled or timed out";
+            } else {
+                error.innerText = e;
+            }
+        }
+
     }
 
     async function attemptAuthentication() {
