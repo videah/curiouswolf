@@ -1,5 +1,19 @@
 {% extends "base.html" %}
 
+{% block head %}
+<!-- OGP card -->
+<meta property="og:title" content="curiouswolf - anonymous Q&A">
+<meta property="og:description" content="Ask @{{ user.username }} an anonymous question.">
+<meta property="og:image" content="https://curiouswolf.shuttleapp.rs/ogp/image/@{{ user.username }}?version=1">
+<meta property="og:type" content="website">
+
+<!-- Twitter card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="curiouswolf - anonymous Q&A">
+<meta name="twitter:description" content="Ask @{{ user.username }} an anonymous question.">
+<meta name="twitter:image" content="https://curiouswolf.shuttleapp.rs/ogp/image/@{{ user.username }}?is_twitter=true">
+{% endblock %}
+
 {% block content %}
 {% include "elements/nav_bar.html" %}
 <h1>This is the profile for @{{ user.username }}</h1>

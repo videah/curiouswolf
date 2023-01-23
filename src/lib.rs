@@ -238,7 +238,7 @@ async fn axum(
         .route("/auth/authenticate_finish", post(auth::finish_authentication))
         .route("/@:user", get(profile))
         .route("/inbox", get(inbox))
-        // .route("/ogp/image/:text", get(ogp::render_open_graph_card))
+        .route("/ogp/image/:text", get(ogp::render_open_graph_card))
         .route("/htmx/question", put(api::htmx::post_question))
         .route("/htmx/question/:id", delete(api::htmx::delete_question))
         .route("/htmx/answer/:id", put(api::htmx::post_answer))
