@@ -35,7 +35,7 @@
         {% let answer = pair.1.clone() %}
             {% let answer_human_time = chrono_humanize::HumanTime::from(answer.created_at.clone()) %}
             {% let question_human_time = chrono_humanize::HumanTime::from(question.created_at.clone()) %}
-            <div class="question round-card hx-fade-out my-4 break-words">
+            <div class="question round-card hx-fade-out my-4 break-all">
                 <p class="text-stone-500">Asked by Anonymous - {{ answer_human_time }}</p>
                 <p>
                     {{ question.body }}
