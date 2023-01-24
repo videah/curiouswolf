@@ -120,7 +120,7 @@ async fn profile(
 
     // Get answers for each question
     let answer_query = r#"
-        SELECT * FROM answers
+        SELECT answers.id, answers.* FROM answers
         JOIN unnest($1::int[]) WITH ORDINALITY AS qid(id, ord)
             ON answers.question_id = qid.id
         ORDER BY qid.ord
@@ -242,6 +242,7 @@ async fn axum(
         .route("/htmx/question", put(api::htmx::post_question))
         .route("/htmx/question/:id", delete(api::htmx::delete_question))
         .route("/htmx/answer/:id", put(api::htmx::post_answer))
+        .route("/htmx/answer/:id", delete(api::htmx::delete_answer))
         .layer(Extension(auth_state))
         .with_state(pool)
         .layer(auth_layer)

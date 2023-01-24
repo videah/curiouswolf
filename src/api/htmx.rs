@@ -140,3 +140,31 @@ pub async fn post_answer(
         body: "Answer posted!".to_string(),
     }
 }
+
+pub async fn delete_answer(
+    Path(id): Path<i32>,
+    State(db): State<PgPool>,
+    auth: AuthContext,
+) -> htmx::Empty {
+
+    let query = r#"
+        DELETE FROM answers
+        WHERE
+            id = $1
+            AND question_id IN (
+                SELECT id FROM questions
+                WHERE recipient_id = $2
+            )
+        RETURNING *
+    "#;
+
+    info!("Deleting answer with id {}", id);
+    let answer = sqlx::query_as::<Postgres, Answer>(query)
+        .bind(id)
+        .bind(auth.current_user.unwrap().id)
+        .fetch_one(&db)
+        .await
+        .unwrap();
+
+    htmx::Empty {}
+}

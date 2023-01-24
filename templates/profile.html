@@ -26,17 +26,30 @@
     </button>
 </form>
 <hr class="text-hr" title="Answers">
-{% if answers.is_empty() %}
-    <p class="text-center">@{{ user.username }} has not answered any questions yet.</p>
-{% else %}
+    {% if answers.is_empty() %}
+        <p class="text-center">@{{ user.username }} has not answered any questions yet.</p>
+    {% else %}
     <div id="answers">
         {% for pair in answers %}
         {% let question = pair.0.clone() %}
         {% let answer = pair.1.clone() %}
             {% let answer_human_time = chrono_humanize::HumanTime::from(answer.created_at.clone()) %}
             {% let question_human_time = chrono_humanize::HumanTime::from(question.created_at.clone()) %}
-            <div class="question round-card hx-fade-out my-4 break-all">
-                <p class="text-stone-500">Asked by Anonymous - {{ question_human_time }}</p>
+            <div class="question round-card hx-fade-out my-4 break-words">
+                <p class="text-stone-500">
+                    Asked by Anonymous - {{ question_human_time }}
+                    {% match current_user %}
+                    {% when Some with (logged_in_user) %}
+                        {% if logged_in_user.id == question.recipient_id %}
+                            - <a hx-delete="/htmx/answer/{{ answer.id }}" hx-swap="outerHTML swap:0.3s"
+                                 hx-target="closest .question" class="text-red-500"
+                                 hx-confirm="Are you sure you wish to delete this answer? The question will go back to your inbox">
+                                Delete
+                            </a>
+                        {% endif %}
+                    {% when None %}
+                    {% endmatch %}
+                </p>
                 <p>
                     {{ question.body }}
                 </p>
