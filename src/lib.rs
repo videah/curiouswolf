@@ -90,7 +90,12 @@ async fn profile(
     State(db): State<PgPool>,
 ) -> ProfilePage {
 
-    let user = sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
+    let user_query = r#"
+        SELECT * FROM users
+        WHERE lower(username) = lower($1)
+    "#;
+
+    let user = sqlx::query_as::<Postgres, User>(user_query)
         .bind(username)
         .fetch_optional(&db)
         .await

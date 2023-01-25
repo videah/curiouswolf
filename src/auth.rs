@@ -74,7 +74,12 @@ pub async fn start_register(
     }
 
     // Make sure username is not already taken
-    let user = sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
+    let user_query = r#"
+        SELECT * FROM users
+        WHERE lower(username) = lower($1)
+    "#;
+
+    let user = sqlx::query_as::<Postgres, User>(user_query)
         .bind(&username)
         .fetch_optional(&db)
         .await
@@ -212,8 +217,13 @@ pub async fn start_authentication(
     session.remove("auth_state");
 
     // Get the user from the database if it exists.
+    let user_query = r#"
+        SELECT * FROM users
+        WHERE lower(username) = lower($1)
+    "#;
+
     let user = {
-        sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
+        sqlx::query_as::<Postgres, User>(user_query)
             .bind(username)
             .fetch_optional(&db)
             .await

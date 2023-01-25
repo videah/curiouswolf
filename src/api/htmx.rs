@@ -18,9 +18,15 @@ pub async fn user(
     Path(username): Path<String>,
     State(db): State<PgPool>,
 ) -> Json<User> {
+
     // Get the user from the database if it exists.
+    let user_query = r#"
+        SELECT * FROM users
+        WHERE lower(username) = lower($1)
+    "#;
+
     let user = {
-        sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE username = $1")
+        sqlx::query_as::<Postgres, User>(user_query)
             .bind(username)
             .fetch_optional(&db)
             .await
