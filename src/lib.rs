@@ -6,7 +6,7 @@ mod api;
 
 use std::cmp::Reverse;
 use std::path::PathBuf;
-use axum::{routing::get, routing::post, routing::put, routing::delete, Router, Extension};
+use axum::{routing::get, routing::post, routing::put, routing::delete, Router, Extension, Json};
 use sync_wrapper::SyncWrapper;
 use askama::Template;
 use axum::extract::{Path, State};
@@ -20,8 +20,9 @@ use sqlx::{PgPool, Postgres};
 use shuttle_secrets::SecretStore;
 
 use rand::prelude::*;
+use serde::Serialize;
 use crate::auth::{AuthContext, AuthState};
-use crate::models::{Answer, Question, RequireAdmin, Role, User};
+use crate::models::{Answer, AppleAppSiteAssociation, Question, RequireAdmin, Role, User};
 
 #[macro_use]
 extern crate tracing;
@@ -205,6 +206,11 @@ async fn admin(
     }
 }
 
+async fn apple_association_file(Extension(state): Extension<AuthState>) -> String {
+    let file = AppleAppSiteAssociation::new(vec![state.appid]);
+    serde_json::to_string(&file).unwrap()
+}
+
 #[shuttle_service::main]
 async fn axum(
     #[shuttle_shared_db::Postgres] pool: PgPool,
@@ -212,6 +218,7 @@ async fn axum(
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
 ) -> shuttle_service::ShuttleAxum {
     let hostname = secret_store.get("CURIOUSWOLF_HOSTNAME").unwrap();
+    let appid = secret_store.get("CURIOUSWOLF_APPID").unwrap();
 
     println!("Running database migrations...");
     sqlx::migrate!().run(&pool).await.unwrap();
@@ -227,7 +234,7 @@ async fn axum(
 
     let user_store = PostgresStore::<User, Role>::new(pool.clone());
     let auth_layer = AuthLayer::new(user_store, &secret);
-    let auth_state = AuthState::new(hostname);
+    let auth_state = AuthState::new(hostname, appid);
 
     let router = Router::new()
         .route("/admin", get(admin))
@@ -248,6 +255,7 @@ async fn axum(
         .route("/htmx/question/:id", delete(api::htmx::delete_question))
         .route("/htmx/answer/:id", put(api::htmx::post_answer))
         .route("/htmx/answer/:id", delete(api::htmx::delete_answer))
+        .route("/.well-known/apple-app-site-association", get(apple_association_file))
         .layer(Extension(auth_state))
         .with_state(pool)
         .layer(auth_layer)

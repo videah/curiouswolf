@@ -110,3 +110,31 @@ impl<S> FromRequestParts<S> for RequireAdmin
         }
     }
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppleAppSiteAssociation {
+    pub applinks: DetailedAppList,
+    pub webcredentials: AppList,
+    pub appclips: AppList,
+}
+
+impl AppleAppSiteAssociation {
+    pub fn new(apps: Vec<String>) -> Self {
+        Self {
+            applinks: DetailedAppList { details: vec![] },
+            webcredentials: AppList { apps },
+            appclips: AppList { apps: vec![] },
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct AppList {
+    pub apps: Vec<String>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct DetailedAppList {
+    // TODO: Placeholder, implement this properly
+    pub details: Vec<String>,
+}

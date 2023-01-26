@@ -32,16 +32,17 @@ pub enum AuthError {
 pub struct AuthState {
     pub webauthn: Arc<Webauthn>,
     pub hostname: String,
+    pub appid: String,
 }
 
 impl AuthState {
-    pub fn new(rp_id: String) -> AuthState {
+    pub fn new(rp_id: String, appid: String) -> AuthState {
         let rp_origin = Url::parse(&format!("https://{rp_id}")).unwrap();
         let builder = WebauthnBuilder::new(&rp_id, &rp_origin).unwrap();
         let builder = builder.rp_name("curiouswolf");
 
         let webauthn = Arc::new(builder.build().unwrap());
-        AuthState { webauthn, hostname: rp_id }
+        AuthState { webauthn, hostname: rp_id, appid }
     }
 }
 
