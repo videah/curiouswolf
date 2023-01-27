@@ -17,7 +17,7 @@
         <tbody>
         {% for user in users %}
             <tr>
-                <td>{{ user.username }}</td>
+                <td><a href="/@{{ user.username }}">{{ user.username }}</a></td>
                 <td>{{ user.role }}</td>
                 <td>{{ user.created_at.format("%Y-%m-%d %H:%M:%S") }} </td>
             </tr>

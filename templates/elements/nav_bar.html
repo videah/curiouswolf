@@ -1,16 +1,16 @@
 <nav class="flex my-4 justify-between items-center round-card">
-  <a href="/" class="text-xl">curiouswolf</a>
+  <a href="/" class="text-xl text-white">curiouswolf</a>
   <div class="flex">
     {% match current_user %}
     {% when Some with (user) %}
     <a href="/@{{ user.username }}">{{ user.username }}</a>
-    <span class="px-2"> | </span>
+    <span class="px-2 text-stone-700"> | </span>
     <a href="/inbox">inbox</a>
-    <span class="px-2"> | </span>
-    <a href="/sign-out">sign out</a>
+    <span class="px-2 text-stone-700"> | </span>
+    <a class="text-red-500" href="/sign-out">sign out</a>
     {% when None %}
     <a href="/sign-in">sign in</a>
-    <span class="px-2"> | </span>
+    <span class="px-2 text-stone-700"> | </span>
     <a href="/register">register</a>
     {% endmatch %}
   </div>
