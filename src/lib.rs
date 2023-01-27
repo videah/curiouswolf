@@ -20,7 +20,6 @@ use sqlx::{PgPool, Postgres};
 use shuttle_secrets::SecretStore;
 
 use rand::prelude::*;
-use serde::Serialize;
 use crate::auth::{AuthContext, AuthState};
 use crate::models::{Answer, AppleAppSiteAssociation, Question, RequireAdmin, Role, User};
 
@@ -65,6 +64,12 @@ struct InboxPage {
 struct AdminPage {
     pub current_user: Option<User>,
     pub users: Vec<User>,
+}
+
+#[derive(Template)]
+#[template(path = "settings.html")]
+struct UserSettingsPage {
+    pub current_user: Option<User>,
 }
 
 async fn index(auth: AuthContext) -> IndexPage {
@@ -211,6 +216,10 @@ async fn apple_association_file(Extension(state): Extension<AuthState>) -> Strin
     serde_json::to_string(&file).unwrap()
 }
 
+async fn user_settings(auth: AuthContext) -> UserSettingsPage {
+    UserSettingsPage { current_user: auth.current_user }
+}
+
 #[shuttle_service::main]
 async fn axum(
     #[shuttle_shared_db::Postgres] pool: PgPool,
@@ -244,6 +253,7 @@ async fn axum(
         .route("/register", get(register))
         .route("/sign-in", get(sign_in))
         .route("/sign-out", get(sign_out))
+        .route("/settings", get(user_settings))
         .route("/auth/register_start/:username", post(auth::start_register))
         .route("/auth/register_finish", post(auth::finish_register))
         .route("/auth/authenticate_start/:username", post(auth::start_authentication))
