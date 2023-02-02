@@ -34,7 +34,7 @@ window.onload = function() {
             return;
         }
 
-        const resp = await fetch("/auth/authenticate_start/" + username.value, {method: "POST"});
+        const resp = await fetch("/auth/authenticate_start/" + username.value, { method: "POST" });
         if (resp.status === 200) {
             let attResp;
             try {

@@ -257,6 +257,7 @@ async fn axum(
         .route("/auth/register_start/:username", post(auth::start_register))
         .route("/auth/register_finish", post(auth::finish_register))
         .route("/auth/authenticate_start/:username", post(auth::start_authentication))
+        .route("/auth/authenticate_start", post(auth::start_authentication))
         .route("/auth/authenticate_finish", post(auth::finish_authentication))
         .route("/@:user", get(profile))
         .route("/inbox", get(inbox))

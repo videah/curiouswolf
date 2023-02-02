@@ -211,11 +211,31 @@ pub async fn finish_register(
 pub async fn start_authentication(
     Extension(state): Extension<AuthState>,
     mut session: WritableSession,
-    Path(username): Path<String>,
+    username: Option<Path<String>>,
     State(db): State<PgPool>,
 ) -> Result<impl IntoResponse, AuthError> {
-
     session.remove("auth_state");
+
+    if username.is_none() {
+        // If no username is provided, we assume the request is a result of the page setting
+        // up for autofill. Thus we have no allowCredentials to provide.
+        // https://w3c.github.io/webauthn/#dom-publickeycredentialrequestoptions-allowcredentials
+        let res = match state.webauthn.start_passkey_authentication(&[]) {
+            Ok((ccr, auth_state)) => {
+                let session_state: (Option<Uuid>, PasskeyAuthentication, Option<User>) = (None, auth_state, None);
+                session
+                    .insert("auth_state", session_state)
+                    .expect("Failed to insert authentication state into session");
+                info!("Successfully started potential autofill authentication!");
+                Json(ccr)
+            },
+            Err(e) => {
+                debug!("challenge_register -> {:?}", e);
+                return Err(AuthError::Unknown);
+            }
+        };
+        return Ok(res);
+    }
 
     // Get the user from the database if it exists.
     let user_query = r#"
@@ -225,7 +245,7 @@ pub async fn start_authentication(
 
     let user = {
         sqlx::query_as::<Postgres, User>(user_query)
-            .bind(username)
+            .bind(username.unwrap().0)
             .fetch_optional(&db)
             .await
             .unwrap()
@@ -247,8 +267,9 @@ pub async fn start_authentication(
 
     let res = match state.webauthn.start_passkey_authentication(allow_credentials) {
         Ok((rcr, auth_state)) => {
+            let session_state: (Option<Uuid>, PasskeyAuthentication, Option<User>) = (Some(user.uuid), auth_state, Some(user));
             session
-                .insert("auth_state", (user.uuid, auth_state, user))
+                .insert("auth_state", session_state)
                 .expect("Failed to insert");
             info!("Successfully started authentication!");
             Json(rcr)
@@ -271,7 +292,7 @@ pub async fn finish_authentication(
 ) -> Result<impl IntoResponse, AuthError> {
 
     info!("Attempting to complete authentication");
-    let (user_unique_id, auth_state, user): (Uuid, PasskeyAuthentication, User) = session
+    let (user_unique_id, auth_state, user): (Option<Uuid>, PasskeyAuthentication, Option<User>) = session
         .get("auth_state")
         .ok_or(AuthError::CorruptSession)?;
     info!("Got authentication state from session");
@@ -280,6 +301,7 @@ pub async fn finish_authentication(
 
     let res = match state.webauthn.finish_passkey_authentication(&auth, &auth_state) {
         Ok(auth_result) => {
+            info!("Successfully completed authentication!");
             // Update the credential counter if needed.
             // Unlikely to be necessary since most passkeys don't even have a mechanism
             // for holding their count, but should be handled regardless just in case 🤞
@@ -298,7 +320,7 @@ pub async fn finish_authentication(
                         if updated {
                             sqlx::query("UPDATE credentials SET passkey = $1 WHERE id = $2")
                                 .bind(cred.passkey.clone())
-                                .bind(cred.id.clone())
+                                .bind(cred.id)
                                 .execute(&db)
                                 .await
                                 .expect("Could not update passkey");
@@ -312,8 +334,40 @@ pub async fn finish_authentication(
             // tries to grab a lock on the session.
             drop(session);
 
-            auth_provider.login(&user).await.expect("Failed to sign in user via session.");
-            info!("User successfully logged in: {:?}", user);
+            match user {
+                Some(user) => {
+                    auth_provider.login(&user).await.expect("Failed to sign in user via session.");
+                    info!("User successfully logged in: {:?}", user);
+                }
+                // It's possible that we don't know the user we're meant to be authenticating yet
+                // like in the case of an autofill where the challenge is given to the client before
+                // we are ever passed a username.
+                None => {
+                    let cred_query = r#"
+                        SELECT * FROM credentials
+                        WHERE passkey::json->>'cred_id' = $1
+                    "#;
+
+                    let cred = {
+                        sqlx::query_as::<Postgres, Credential>(cred_query)
+                            .bind(auth_result.cred_id().to_string())
+                            .fetch_one(&db)
+                            .await
+                            .expect("Failed to pull credential from database")
+                    };
+
+                    let user = {
+                        sqlx::query_as::<Postgres, User>("SELECT * FROM users WHERE uuid = $1")
+                            .bind(cred.user_uuid)
+                            .fetch_one(&db)
+                            .await
+                            .expect("Failed to pull user from database")
+                    };
+
+                    auth_provider.login(&user).await.expect("Failed to sign in user via session.");
+                    info!("User successfully logged in: {:?}", user);
+                }
+            }
 
             StatusCode::OK
         }

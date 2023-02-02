@@ -3,13 +3,45 @@
 {% block head %}
 <script src="/static/simple-webauthn.min.js"></script>
 <script src="/static/authentication.js"></script>
+<script>
+    // TODO: Enable once backend is ready
+    // const { startAuthentication } = SimpleWebAuthnBrowser;
+    //
+    // fetch("/auth/authenticate_start", { method: "POST" })
+    // .then((response) => {
+    //     response.json().then(
+    //         (decoded) => {
+    //             console.log("Got autofill challenge. Waiting for input...")
+    //             startAuthentication(decoded["publicKey"], true)
+    //                 .then((authResp) => {
+    //                     console.log(authResp);
+    //                     console.log("Autofill credential used. Sending response to server...")
+    //                     fetch("/auth/authenticate_finish", {
+    //                         method: "POST",
+    //                         headers: {
+    //                             "Content-Type": "application/json"
+    //                         },
+    //                         body: JSON.stringify(authResp),
+    //                     }).then((finalResponse) => {
+    //                         if (finalResponse.status === 200) {
+    //                             document.location.href = "/";
+    //                         }
+    //                     });
+    //                 })
+    //                 .catch((err) => {
+    //                     console.log(err);
+    //                 });
+    //         }
+    //     );
+    // })
+</script>
 {% endblock %}
 
 {% block content %}
 {% include "elements/nav_bar.html" %}
 <div class="round-card flex flex-col p-8 max-w-md mt-32 mx-auto">
     <label class="font-semibold" for="username">Username</label>
-    <input class="text-white my-2 placeholder-stone-600 bg-stone-900 border border-stone-600 rounded-md p-2" type="text" id="username" name="username" autocapitalize="none" autocomplete="username webauthn">
+    <input class="text-white my-2 placeholder-stone-600 bg-stone-900 border border-stone-600 rounded-md p-2" type="text" id="username" name="username" autocapitalize="none" autocomplete="webauthn username">
     <p id="error-label" class="support text-red-500"></p>
     <button id="sign-in-button" class="transition-all mt-4 button button-xl ~info @high">
         <div id="button-label" class="flex items-center">
