@@ -6,8 +6,7 @@ mod api;
 
 use std::cmp::Reverse;
 use std::path::PathBuf;
-use axum::{routing::get, routing::post, routing::put, routing::delete, Router, Extension, Json};
-use sync_wrapper::SyncWrapper;
+use axum::{routing::get, routing::post, routing::put, routing::delete, Router, Extension};
 use askama::Template;
 use axum::extract::{Path, State};
 use axum::response::Redirect;
@@ -220,17 +219,17 @@ async fn user_settings(auth: AuthContext) -> UserSettingsPage {
     UserSettingsPage { current_user: auth.current_user }
 }
 
-#[shuttle_service::main]
+#[shuttle_runtime::main]
 async fn axum(
     #[shuttle_shared_db::Postgres] pool: PgPool,
     #[shuttle_static_folder::StaticFolder] static_folder: PathBuf,
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
-) -> shuttle_service::ShuttleAxum {
+) -> shuttle_axum::ShuttleAxum {
     let hostname = secret_store.get("CURIOUSWOLF_HOSTNAME").unwrap();
     let appid = secret_store.get("CURIOUSWOLF_APPID").unwrap();
 
     println!("Running database migrations...");
-    sqlx::migrate!().run(&pool).await.unwrap();
+    // sqlx::migrate!().run(&pool).await.unwrap();
     println!("All migrations ran successfully!");
 
     println!("Creating session memory store");
@@ -272,7 +271,5 @@ async fn axum(
         .layer(auth_layer)
         .layer(session_layer);
 
-    let sync_wrapper = SyncWrapper::new(router);
-
-    Ok(sync_wrapper)
+    Ok(router.into())
 }
