@@ -73,7 +73,7 @@ pub async fn post_question(
         RETURNING *
     "#;
 
-    let question = sqlx::query_as::<Postgres, Question>(query)
+    sqlx::query_as::<Postgres, Question>(query)
         .bind(form.body)
         .bind(user.id)
         .fetch_one(&db)
@@ -85,15 +85,10 @@ pub async fn post_question(
     }
 }
 
-#[derive(Deserialize)]
-pub struct DeleteQuestion {
-    id: i32,
-}
-
 pub async fn delete_question(
     State(db): State<PgPool>,
     Path(id): Path<i32>,
-    mut auth: AuthContext,
+    auth: AuthContext,
 ) -> htmx::Empty {
 
     let query = r#"
@@ -104,7 +99,7 @@ pub async fn delete_question(
         RETURNING *
     "#;
 
-    let question = sqlx::query_as::<Postgres, Question>(query)
+    sqlx::query_as::<Postgres, Question>(query)
         .bind(id)
         .bind(auth.current_user.unwrap().id)
         .fetch_one(&db)
@@ -112,11 +107,6 @@ pub async fn delete_question(
         .unwrap();
 
     htmx::Empty {}
-}
-
-#[derive(Deserialize)]
-pub struct PostAnswer {
-    question_id: i32,
 }
 
 pub async fn post_answer(
@@ -135,7 +125,7 @@ pub async fn post_answer(
         RETURNING *
     "#;
 
-    let question = sqlx::query_as::<Postgres, Answer>(query)
+    sqlx::query_as::<Postgres, Answer>(query)
         .bind(decoded)
         .bind(id)
         .fetch_one(&db)
@@ -165,7 +155,7 @@ pub async fn delete_answer(
     "#;
 
     info!("Deleting answer with id {}", id);
-    let answer = sqlx::query_as::<Postgres, Answer>(query)
+    sqlx::query_as::<Postgres, Answer>(query)
         .bind(id)
         .bind(auth.current_user.unwrap().id)
         .fetch_one(&db)

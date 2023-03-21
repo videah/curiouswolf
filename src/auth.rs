@@ -117,7 +117,7 @@ pub async fn start_register(
                 .expect("Failed to insert registration state into session");
             info!("Successfully started registration!");
             Json(ccr)
-        },
+        }
         Err(e) => {
             debug!("challenge_register -> {:?}", e);
             return Err(AuthError::Unknown);
@@ -228,7 +228,7 @@ pub async fn start_authentication(
                     .expect("Failed to insert authentication state into session");
                 info!("Successfully started potential autofill authentication!");
                 Json(ccr)
-            },
+            }
             Err(e) => {
                 debug!("challenge_register -> {:?}", e);
                 return Err(AuthError::Unknown);
@@ -290,7 +290,6 @@ pub async fn finish_authentication(
     State(db): State<PgPool>,
     Json(auth): Json<PublicKeyCredential>,
 ) -> Result<impl IntoResponse, AuthError> {
-
     info!("Attempting to complete authentication");
     let (user_unique_id, auth_state, user): (Option<Uuid>, PasskeyAuthentication, Option<User>) = session
         .get("auth_state")

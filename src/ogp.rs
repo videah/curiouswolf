@@ -1,7 +1,7 @@
 use std::io::Cursor;
 use axum::extract::{Path, Query};
-use axum::response::{IntoResponse, IntoResponseParts, ResponseParts};
-use http::{HeaderMap, StatusCode};
+use axum::response::IntoResponse;
+use http::HeaderMap;
 use image::DynamicImage;
 
 use og_image_writer::{style, writer::OGImageWriter};
@@ -33,7 +33,7 @@ pub async fn render_open_graph_card(
         } else {
             card
         },
-        ImageInputFormat::Png
+        ImageInputFormat::Png,
     ).unwrap();
 
     let font = Vec::from(include_bytes!("../assets/helvetica.ttf") as &[u8]);

@@ -6,13 +6,9 @@ use sqlx::types::Json;
 use webauthn_rs::prelude::{Passkey, Uuid};
 use async_trait::async_trait;
 
-use axum_login::{
-    axum_sessions::{async_session::MemoryStore, SessionLayer},
-    secrecy::SecretVec,
-    AuthLayer, AuthUser, RequireAuthorizationLayer,
-};
+use axum_login::{secrecy::SecretVec, AuthUser};
 
-use axum_sessions::async_session::chrono::{DateTime, NaiveDateTime, Utc};
+use axum_sessions::async_session::chrono::{DateTime, Utc};
 use http::request::Parts;
 use http::StatusCode;
 

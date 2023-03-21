@@ -229,7 +229,7 @@ async fn axum(
     let appid = secret_store.get("CURIOUSWOLF_APPID").unwrap();
 
     println!("Running database migrations...");
-    // sqlx::migrate!().run(&pool).await.unwrap();
+    sqlx::migrate!().run(&pool).await.unwrap();
     println!("All migrations ran successfully!");
 
     println!("Creating session memory store");
