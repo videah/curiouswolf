@@ -54,7 +54,7 @@ window.onload = function() {
                 success.classList.remove("hidden");
 
                 await new Promise(r => setTimeout(r, 300));
-                document.location.href = "/";
+                document.location.href = "/welcome";
             } else {
                 return displayError(verificationResp);
             }

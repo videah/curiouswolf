@@ -1,5 +1,6 @@
 use axum::extract::{Path, State};
-use axum::{Form, Json};
+use axum::{Extension, Form, Json};
+use futures::future::join_all;
 use http::HeaderMap;
 use sqlx::{PgPool, Postgres};
 
@@ -9,6 +10,7 @@ use crate::auth::AuthContext;
 
 use crate::htmx;
 use crate::models::{Answer, Question, User};
+use crate::web_push::{PushSubscription, WebPushState};
 
 pub async fn hello() -> htmx::HelloWorld {
     htmx::HelloWorld {}
@@ -45,6 +47,7 @@ pub struct PostQuestion {
 
 pub async fn post_question(
     State(db): State<PgPool>,
+    Extension(state): Extension<WebPushState>,
     form: Form<PostQuestion>,
 ) -> htmx::Banner {
     let form = form.0;
@@ -74,11 +77,41 @@ pub async fn post_question(
     "#;
 
     sqlx::query_as::<Postgres, Question>(query)
-        .bind(form.body)
+        .bind(&form.body)
         .bind(user.id)
         .fetch_one(&db)
         .await
         .unwrap();
+
+    // Send push notifications to the user
+    if state.vapid_public_key.is_some() && state.vapid_private_key.is_some() {
+        let username = user.username.clone();
+        tokio::spawn(async move {
+            // Get all push subscriptions for the user
+            let query = r#"
+            SELECT * FROM push_subscriptions
+            WHERE user_id = $1
+        "#;
+
+            let subscriptions = sqlx::query_as::<Postgres, PushSubscription>(query)
+                .bind(user.id)
+                .fetch_all(&db)
+                .await
+                .unwrap();
+
+            // Send a push notification to each subscription
+            let message = format!("You have a new question @{}!\n{}", username, form.body);
+
+            // Get a future for each subscription
+            let key = state.vapid_private_key.unwrap();
+            let futures = subscriptions.iter().map(|subscription| {
+                subscription.send_message(&key, &message)
+            });
+
+            // Wait for all futures to complete
+            join_all(futures).await;
+        });
+    }
 
     htmx::Banner {
         body: format!("Question sent! @{} will hopefully read and answer it soon.", user.username),

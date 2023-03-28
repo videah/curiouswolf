@@ -3,6 +3,7 @@ mod auth;
 mod models;
 mod ogp;
 mod api;
+mod web_push;
 
 use std::cmp::Reverse;
 use std::path::PathBuf;
@@ -19,8 +20,10 @@ use sqlx::{PgPool, Postgres};
 use shuttle_secrets::SecretStore;
 
 use rand::prelude::*;
+use tracing::log;
 use crate::auth::{AuthContext, AuthState};
 use crate::models::{Answer, AppleAppSiteAssociation, Question, RequireAdmin, Role, User};
+use crate::web_push::WebPushState;
 
 #[macro_use]
 extern crate tracing;
@@ -245,13 +248,16 @@ async fn axum(
     let appid = secret_store.get("CURIOUSWOLF_APPID")
         .unwrap_or("".to_string());
 
-    info!("Running database migrations...");
+    let vapid_private_key = secret_store.get("CURIOUSWOLF_VAPID_PRIVATE_KEY");
+    let vapid_public_key = secret_store.get("CURIOUSWOLF_VAPID_PUBLIC_KEY");
+
+    log::info!("Running database migrations...");
     match sqlx::migrate!().run(&pool).await {
-        Ok(_) => info!("All migrations ran successfully!"),
+        Ok(_) => log::info!("All migrations ran successfully!"),
         Err(e) => warn!("Error running migrations: {}", e),
     }
 
-    info!("Creating session memory store");
+    log::info!("Creating session memory store");
     let session_store = MemoryStore::new();
     let secret = thread_rng().gen::<[u8; 128]>(); // MUST be at least 64 bytes!
     let session_layer = SessionLayer::new(session_store, &secret)
@@ -262,6 +268,11 @@ async fn axum(
     let user_store = PostgresStore::<User, Role>::new(pool.clone());
     let auth_layer = AuthLayer::new(user_store, &secret);
     let auth_state = AuthState::new(hostname, appid);
+
+    if vapid_private_key.is_none() || vapid_public_key.is_none() {
+        warn!("VAPID keys not set, web push notifications will not work");
+    }
+    let webpush_state = WebPushState::new(vapid_public_key, vapid_private_key);
 
     let router = Router::new()
         .route("/admin", get(admin))
@@ -286,11 +297,14 @@ async fn axum(
         .route("/htmx/answer/:id", put(api::htmx::post_answer))
         .route("/htmx/answer/:id", delete(api::htmx::delete_answer))
         .route("/.well-known/apple-app-site-association", get(apple_association_file))
+        .route("/notifications/info", get(web_push::get_vapid_public_key))
+        .route("/notifications/subscribe", post(web_push::handle_new_subscription))
         .layer(Extension(auth_state))
         .with_state(pool)
         .layer(auth_layer)
-        .layer(session_layer);
+        .layer(session_layer)
+        .layer(Extension(webpush_state));
 
-    info!("Passing router to Shuttle...");
+    log::info!("Passing router to Shuttle...");
     Ok(router.into())
 }
