@@ -225,14 +225,23 @@ async fn axum(
     #[shuttle_static_folder::StaticFolder] static_folder: PathBuf,
     #[shuttle_secrets::Secrets] secret_store: SecretStore,
 ) -> shuttle_axum::ShuttleAxum {
-    let hostname = secret_store.get("CURIOUSWOLF_HOSTNAME").unwrap();
-    let appid = secret_store.get("CURIOUSWOLF_APPID").unwrap();
+    // Log errors on panic
+    log_panics::init();
 
-    println!("Running database migrations...");
-    sqlx::migrate!().run(&pool).await.unwrap();
-    println!("All migrations ran successfully!");
+    // Get various secrets from the config
+    let hostname = secret_store.get("CURIOUSWOLF_HOSTNAME")
+        .unwrap_or("localhost".to_string());
 
-    println!("Creating session memory store");
+    let appid = secret_store.get("CURIOUSWOLF_APPID")
+        .unwrap_or("".to_string());
+
+    info!("Running database migrations...");
+    match sqlx::migrate!().run(&pool).await {
+        Ok(_) => info!("All migrations ran successfully!"),
+        Err(e) => warn!("Error running migrations: {}", e),
+    }
+
+    info!("Creating session memory store");
     let session_store = MemoryStore::new();
     let secret = thread_rng().gen::<[u8; 128]>(); // MUST be at least 64 bytes!
     let session_layer = SessionLayer::new(session_store, &secret)
@@ -271,5 +280,6 @@ async fn axum(
         .layer(auth_layer)
         .layer(session_layer);
 
+    info!("Passing router to Shuttle...");
     Ok(router.into())
 }

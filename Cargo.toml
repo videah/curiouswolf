@@ -4,31 +4,32 @@ version = "0.2.0"
 edition = "2021"
 
 [dependencies]
-shuttle-axum = "0.12.0"
-shuttle-runtime = "0.12.0"
+shuttle-axum = "0.13.0"
+shuttle-runtime = "0.13.0"
 tokio = "1.26.0"
-shuttle-shared-db = { version = "0.12.0", features = ["postgres", "sqlx"] }
+shuttle-shared-db = { version = "0.13.0", features = ["postgres", "sqlx"] }
 axum = "0.6.2"
 sync_wrapper = "0.1.1"
 askama = { version = "0.11.1", features = ["with-axum"] }
 askama_axum = "0.2.1"
-sqlx = { version = "0.6.2", features = ["runtime-tokio-native-tls", "postgres", "json", "uuid", "chrono"] }
+sqlx = { version = "0.6.3", features = ["runtime-tokio-native-tls", "postgres", "json", "uuid", "chrono"] }
 webauthn-rs = { version = "0.4.8", features = ["danger-allow-state-serialisation"] }
 thiserror = "1.0.38"
-axum-sessions = "0.4.1"
+axum-sessions = "0.5.0"
 rand = { version = "0.8.5", features = ["min_const_gen"] }
 serde = { version = "1.0.152", features = ["derive"] }
 tracing = "0.1.37"
 axum-extra = { version = "0.4.2", features = ["spa"] }
-shuttle-static-folder = "0.12.0"
+shuttle-static-folder = "0.13.0"
 axum-login = { git = "https://github.com/videah/axum-login", features = ["postgres", "sqlx-runtime-tokio-native-tls"] }
 # resvg = "0.28.0"
 http = "0.2.8"
 chrono-humanize = "0.2.2"
 chrono = "0.4.23"
 async-trait = "0.1.63"
-shuttle-secrets = "0.12.0"
+shuttle-secrets = "0.13.0"
 urlencoding = "2.1.2"
 og_image_writer = "0.11.0"
 image = "0.23.14"
 serde_json = "1.0.91"
+log-panics = { version = "2", features = ["with-backtrace"]}
