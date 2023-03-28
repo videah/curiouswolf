@@ -71,6 +71,12 @@ struct UserSettingsPage {
     pub current_user: Option<User>,
 }
 
+#[derive(Template)]
+#[template(path = "welcome.html")]
+struct WelcomePage {
+    pub current_user: Option<User>,
+}
+
 async fn index(auth: AuthContext) -> IndexPage {
     IndexPage {
         current_user: auth.current_user
@@ -219,6 +225,10 @@ async fn user_settings(auth: AuthContext) -> UserSettingsPage {
     UserSettingsPage { current_user: auth.current_user }
 }
 
+async fn welcome_page(auth: AuthContext) -> WelcomePage {
+    WelcomePage { current_user: auth.current_user }
+}
+
 #[shuttle_runtime::main]
 async fn axum(
     #[shuttle_shared_db::Postgres] pool: PgPool,
@@ -258,6 +268,7 @@ async fn axum(
         .route_layer(RequireAuthorizationLayer::<i32, User, Role>::login())
         .merge(SpaRouter::new("/static", static_folder))
         .route("/", get(index))
+        .route("/welcome", get(welcome_page))
         .route("/register", get(register))
         .route("/sign-in", get(sign_in))
         .route("/sign-out", get(sign_out))
