@@ -10,11 +10,12 @@ use std::path::PathBuf;
 use axum::{routing::get, routing::post, routing::put, routing::delete, Router, Extension};
 use askama::Template;
 use axum::extract::{Path, State};
-use axum::response::Redirect;
+use axum::response::{IntoResponse, Redirect};
 use axum_extra::routing::SpaRouter;
 use axum_login::{AuthLayer, PostgresStore, RequireAuthorizationLayer};
 use axum_login::axum_sessions::async_session::MemoryStore;
 use axum_sessions::{SameSite, SessionLayer};
+use http::HeaderMap;
 use sqlx::{PgPool, Postgres};
 
 use shuttle_secrets::SecretStore;
@@ -232,6 +233,15 @@ async fn welcome_page(auth: AuthContext) -> WelcomePage {
     WelcomePage { current_user: auth.current_user }
 }
 
+async fn service_worker() -> impl IntoResponse {
+    // Set the MIME type to application/javascript
+    let mut headers = HeaderMap::new();
+    headers.insert(http::header::CONTENT_TYPE, "application/javascript".parse().unwrap());
+    let js = include_str!("../static/service-worker.js");
+
+    (headers, js)
+}
+
 #[shuttle_runtime::main]
 async fn axum(
     #[shuttle_shared_db::Postgres] pool: PgPool,
@@ -299,6 +309,7 @@ async fn axum(
         .route("/.well-known/apple-app-site-association", get(apple_association_file))
         .route("/notifications/info", get(web_push::get_vapid_public_key))
         .route("/notifications/subscribe", post(web_push::handle_new_subscription))
+        .route("/service-worker.js", get(service_worker))
         .layer(Extension(auth_state))
         .with_state(pool)
         .layer(auth_layer)

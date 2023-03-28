@@ -39,7 +39,7 @@ function getServerKey() {
 
 function subscribeUserToPush(serverKey) {
     return navigator.serviceWorker
-        .register('/static/service-worker.js')
+        .register('/service-worker.js')
         .then(function (registration) {
             const subscribeOptions = {
                 userVisibleOnly: true,
