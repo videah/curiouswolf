@@ -12,10 +12,15 @@ use sqlx::FromRow;
 pub struct WebPushState {
     pub vapid_public_key: Option<String>,
     pub(crate) vapid_private_key: Option<String>,
+    pub email: Option<String>,
 }
 
 impl WebPushState {
-    pub fn new(vapid_public_key: Option<String>, vapid_private_key: Option<String>) -> WebPushState {
+    pub fn new(
+        vapid_public_key: Option<String>,
+        vapid_private_key: Option<String>,
+        email: Option<String>
+    ) -> WebPushState {
         // If the keys are not provided, we can't do anything
         if vapid_public_key.is_none() || vapid_private_key.is_none() {
             log::warn!("WebPushState::new(): Vapid keys are not provided. WebPush notifications will not work.");
@@ -24,6 +29,7 @@ impl WebPushState {
         WebPushState {
             vapid_public_key,
             vapid_private_key,
+            email,
         }
     }
 }
@@ -75,16 +81,22 @@ pub async fn handle_new_subscription(
         false,
     );
 
-    let sig_builder = VapidSignatureBuilder::from_base64(
+    let mut sig_builder = VapidSignatureBuilder::from_base64(
         &state.vapid_private_key.unwrap(),
         config,
         &subscription_info,
-    ).unwrap().build().unwrap();
+    ).unwrap();
+
+    // Apple requires the "sub" claim to be present for them to accept the resulting JWT as valid.
+    // As far as I can tell this isn't really documented anywhere and is absolutely not in the spec.
+    // Go figure.
+    sig_builder.add_claim("sub", format!("mailto:{}", state.email.unwrap()));
+    let signature = sig_builder.build().unwrap();
 
     let mut builder = WebPushMessageBuilder::new(&subscription_info).unwrap();
     let content = "🐺 Welcome to curiouswolf! You have successfully subscribed to web push notifications.";
     builder.set_payload(ContentEncoding::Aes128Gcm, content.as_bytes());
-    builder.set_vapid_signature(sig_builder);
+    builder.set_vapid_signature(signature);
 
     let client = WebPushClient::new().unwrap();
     match client.send(builder.build().unwrap()).await {

@@ -19,25 +19,7 @@
   <p>Welcome to curiouswolf, <strong>Username!</strong></p>
   {% endmatch %}
 
-  <div class="hidden" id="notifications">
-    <div class="my-4">
-      <h1 class="text-xl">Notifications</h1>
-      <hr class="mt-1 border-stone-700">
-    </div>
-
-    <div class="mb-2">
-      <p>
-        Get notified whenever someone asks you a question even when you're not on curiouswolf.
-        This can be changed later at any time in your settings.
-      </p>
-    </div>
-
-    <label class="relative inline-flex items-center cursor-pointer">
-      <input id="notification-toggle" type="checkbox" value="" class="sr-only peer"/>
-      <div class="w-14 h-7 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-stone-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-      <span class="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300">Enable notifications on this device</span>
-    </label>
-  </div>
+  {% include "elements/notification_settings_section.html" %}
 
   <div class="my-4">
     <h1 class="text-xl">Rules</h1>

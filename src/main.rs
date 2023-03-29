@@ -260,6 +260,7 @@ async fn axum(
 
     let vapid_private_key = secret_store.get("CURIOUSWOLF_VAPID_PRIVATE_KEY");
     let vapid_public_key = secret_store.get("CURIOUSWOLF_VAPID_PUBLIC_KEY");
+    let email = secret_store.get("CURIOUSWOLF_VAPID_EMAIL");
 
     log::info!("Running database migrations...");
     match sqlx::migrate!().run(&pool).await {
@@ -282,7 +283,7 @@ async fn axum(
     if vapid_private_key.is_none() || vapid_public_key.is_none() {
         warn!("VAPID keys not set, web push notifications will not work");
     }
-    let webpush_state = WebPushState::new(vapid_public_key, vapid_private_key);
+    let webpush_state = WebPushState::new(vapid_public_key, vapid_private_key, email);
 
     let router = Router::new()
         .route("/admin", get(admin))
