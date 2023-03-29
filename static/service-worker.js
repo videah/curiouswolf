@@ -3,15 +3,17 @@ self.addEventListener('push', function(event) {
         return;
     }
 
-    const title = "curiouswolf";
-    const body = event.data.text() ?? "👻 Unknown Message Received";
-    const options = {
-        body: body
-    };
+    const data = event.data.json();
+    const title = data.title;
+    const body = data.body;
 
-    const promiseChain = self.registration.showNotification(title, options);
+    const promiseChain = self.registration.showNotification(
+        title,
+        {
+            body: body,
+        }
+    );
 
-    console.log(options);
     console.log("Waiting for promise chain to finish");
     event.waitUntil(promiseChain);
 });

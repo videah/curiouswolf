@@ -56,6 +56,18 @@ pub struct WebPushUserKeys {
     pub auth: String,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct PushNotification {
+    pub title: String,
+    pub body: String,
+}
+
+impl PushNotification {
+    pub fn to_json(&self) -> String {
+        serde_json::to_string(&self).unwrap()
+    }
+}
+
 pub async fn handle_new_subscription(
     Extension(state): Extension<WebPushState>,
     State(db): State<PgPool>,
@@ -90,12 +102,18 @@ pub async fn handle_new_subscription(
     // Apple requires the "sub" claim to be present for them to accept the resulting JWT as valid.
     // As far as I can tell this isn't really documented anywhere and is absolutely not in the spec.
     // Go figure.
+    // https://datatracker.ietf.org/doc/html/draft-thomson-webpush-vapid#section-2.1
     sig_builder.add_claim("sub", format!("mailto:{}", state.email.unwrap()));
     let signature = sig_builder.build().unwrap();
 
     let mut builder = WebPushMessageBuilder::new(&subscription_info).unwrap();
-    let content = "🐺 Welcome to curiouswolf! You have successfully subscribed to web push notifications.";
-    builder.set_payload(ContentEncoding::Aes128Gcm, content.as_bytes());
+
+    let notification = PushNotification {
+        title: "Now Subscribed".to_string(),
+        body: "Welcome to curiouswolf! 🐺 You have successfully subscribed to web push notifications.".to_string(),
+    }.to_json();
+
+    builder.set_payload(ContentEncoding::Aes128Gcm, notification.as_bytes());
     builder.set_vapid_signature(signature);
 
     let client = WebPushClient::new().unwrap();
@@ -159,7 +177,7 @@ pub struct PushSubscription {
 }
 
 impl PushSubscription {
-    pub async fn send_message(&self, private_key: &str, message: &str) {
+    pub async fn send_message(&self, private_key: &str, message: &str, email: &str) {
         let subscription_info = SubscriptionInfo::new(
             self.endpoint.clone(),
             self.p256dh.clone(),
@@ -171,15 +189,22 @@ impl PushSubscription {
             false,
         );
 
-        let sig_builder = VapidSignatureBuilder::from_base64(
+        let mut sig_builder = VapidSignatureBuilder::from_base64(
             private_key,
             config,
             &subscription_info,
-        ).unwrap().build().unwrap();
+        ).unwrap();
+
+        // Apple requires the "sub" claim to be present for them to accept the resulting JWT as valid.
+        // As far as I can tell this isn't really documented anywhere and is absolutely not in the spec.
+        // Go figure.
+        // https://datatracker.ietf.org/doc/html/draft-thomson-webpush-vapid#section-2.1
+        sig_builder.add_claim("sub", format!("mailto:{email}"));
+        let signature = sig_builder.build().unwrap();
 
         let mut builder = WebPushMessageBuilder::new(&subscription_info).unwrap();
         builder.set_payload(ContentEncoding::Aes128Gcm, message.as_bytes());
-        builder.set_vapid_signature(sig_builder);
+        builder.set_vapid_signature(signature);
 
         let client = WebPushClient::new().unwrap();
         match client.send(builder.build().unwrap()).await {

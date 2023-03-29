@@ -10,7 +10,7 @@ use crate::auth::AuthContext;
 
 use crate::htmx;
 use crate::models::{Answer, Question, User};
-use crate::web_push::{PushSubscription, WebPushState};
+use crate::web_push::{PushNotification, PushSubscription, WebPushState};
 
 pub async fn hello() -> htmx::HelloWorld {
     htmx::HelloWorld {}
@@ -100,12 +100,16 @@ pub async fn post_question(
                 .unwrap();
 
             // Send a push notification to each subscription
-            let message = format!("You have a new question @{}!\n{}", username, form.body);
+            let notification = PushNotification {
+                title: "New Question".to_string(),
+                body: format!("You have a new question @{}!\n{}", username, form.body),
+            }.to_json();
 
             // Get a future for each subscription
             let key = state.vapid_private_key.unwrap();
+            let email = state.email.unwrap();
             let futures = subscriptions.iter().map(|subscription| {
-                subscription.send_message(&key, &message)
+                subscription.send_message(&key, &notification, &email)
             });
 
             // Wait for all futures to complete
